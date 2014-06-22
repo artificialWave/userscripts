@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name			The West Colourful Rivers
-// @description		Allows you to change the colours of the rivers in The West.
-// @include			http://*.the-west.*/game.php*
-// @version			1.2
-// @author			Slygoxx
-// @grant			none
-// @updateURL       http://userscripts.org/scripts/source/388964.meta.js
-// @installURL      http://userscripts.org/scripts/source/388964.user.js
+// @name            The West Colourful Rivers
+// @description     Allows you to change the colours of the rivers in The West.
+// @include         http://*.the-west.*/game.php*
+// @version         1.2
+// @author          Slygoxx
+// @grant           none
+// @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Rivercolours.user.js
+// @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Rivercolours.user.js
 // ==/UserScript== 
 
 function contentEval(source) {
