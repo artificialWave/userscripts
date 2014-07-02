@@ -56,21 +56,20 @@ run = function(){
     }
     
 	KOtimer.retrieveTimeleft = function(){
-		if(Character.homeTown.town_id != 0)
+		if(Character.homeTown.town_id != 0) // Can only request the info when you're in a town
 		{
 			$.post( "game.php?window=building_sheriff&mode=index",{town_id:Character.homeTown.town_id},function( data ) {
 				KOtimer.timeleft = data.timeleft;
 				KOtimer.aliveAgain = Math.round(new Date().getTime()/1000)+data.timeleft;
-				console.log("Server query successful");
 			});
 		}
-		else
+		else // We'll hide the image when you're not in a town
 		{
 			KOtimer.aliveAgain = 0;
 			$('#knockouttimer').hide();
 			
 		}
-		setTimeout(KOtimer.retrieveTimeleft,300000);
+		setTimeout(KOtimer.retrieveTimeleft,300000); // And we'll do it again in 5 minutes
 	}
 	KOtimer.update = function(){
 		
