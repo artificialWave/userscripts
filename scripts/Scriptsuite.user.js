@@ -26,18 +26,115 @@ runScript(function() {
         preferences: {
             KOTimer: true,
             RiverColours: "default",
-            Experience: false
+            Experience: false,
+            Achievements: false
+        },
+        possibleRiverColours: {
+            Default: 'default',
+            Red: 'halloween',
+            Green: 'paddy',
+            Pink: 'valentine',
+            Blue: ''
         },
         getPreference: function(pref) {
             return this.preferences[pref];
+        },
+        setPreference: function(pref, val) {
+            if (pref == 'RiverColours')
+                SlySuite.RiverColours.changeColour();
+
+            this.preferences[pref] = val;
+            localStorage.setObject('SlySuite', this.preferences);
+
+
+        },
+        images: {
+            achievs: 'http://i300.photobucket.com/albums/nn22/qwexrty/achievs_zps4c5d9ee3.jpg',
+            settings: 'http://i300.photobucket.com/albums/nn22/qwexrty/settings_zpsa8c2f112.jpg'
+        },
+        init: function() {
+            Storage.prototype.setObject = function(key, value) {
+                this.setItem(key, JSON.stringify(value));
+            }
+
+            Storage.prototype.getObject = function(key) {
+                var value = this.getItem(key);
+                return value && JSON.parse(value);
+            }
+
+            localStorage.getObject('SlySuite') == null ? localStorage.setObject('SlySuite', this.preferences) : this.preferences = localStorage.getObject('SlySuite');
+            SlySuite.createSettingsButton();
+            if (SlySuite.getPreference('KOTimer'))
+                SlySuite.KOTimer.firstrun();
+            $(setTimeout(function() {
+                SlySuite.RiverColours.init();
+                if (SlySuite.getPreference('RiverColours') != 'default')
+                    SlySuite.RiverColours.changeColour();
+            }, 5000));
+
+        },
+        createSettingsButton: function() {
+
+            var bottom = $('<div></div>').attr({
+                'class': 'menucontainer_bottom'
+            });
+
+            var icon = $('<div></div>').attr({
+                'class': 'menulink',
+                'title': "Script suite settings"
+            }).css({
+                'background-image': 'url(' + this.images.settings + ')',
+                'background-position': '0px 0px'
+            }).mouseleave(function() {
+                $(this).css("background-position", "0px 0px");
+            }).mouseenter(function(e) {
+                $(this).css("background-position", "-25px 0px");
+            }).click(function() {
+                SlySuite.openSettings();
+            });
+
+            $('#ui_menubar .ui_menucontainer :last').after($('<div></div>').attr({
+                'class': 'ui_menucontainer',
+                'id': 'SlySuite_settings_icon'
+            }).append(icon).append(bottom));
+        },
+        createAchievementsButton: function() {
+
+        },
+        openSettings: function() {
+            content = this.generateWindowContent();
+            var win = wman.open("SlySuite", "Script Suite Settings").setResizeable(true).setMinSize(450, 400).setSize(450, 400);
+            win.appendToContentPane(content);
+        },
+        generateWindowContent: function() {
+            content = "";
+            content += "<div style=\"margin-left:5px;\">";
+            this.getPreference('KOTimer') == true ? check = " checked='checked'" : check = "";
+            content += "<input type='checkbox' id='KOtimer_checkbox'" + check + " onchange=\"SlySuite.setPreference('KOTimer',this.checked)\"><label for='KOtimer_checkbox'>Knockout Timer</label><br />";
+            content += "River colour ";
+            content += "<select onchange=\"SlySuite.setPreference('RiverColours',this.value);\">";
+            colours = SlySuite.possibleRiverColours;
+            for (c in colours) {
+                if (SlySuite.getPreference('RiverColours') == colours[c])
+                    content += "<option selected='selected' value=\"" + colours[c] + "\">" + c + "</option>";
+                else
+                    content += "<option value=\"" + colours[c] + "\">" + c + "</option>";
+
+            }
+            content += "</select>";
+            content += "<br /><br />";
+            content += "Some settings require a refresh to apply.";
+            content += "</div>";
+            return content;
         }
 
     };
 
-    SlySuite.KOTimer = new Object();
-    SlySuite.KOTimer.timeleft = 0;
-    SlySuite.KOTimer.aliveAgain = 0;
-    SlySuite.KOTimer.image = "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' id='knockouttimer'><div id='timer'></div></div>";
+    SlySuite.KOTimer = {
+        timeleft: 0,
+        aliveAgain: 0,
+        image: "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' id='knockouttimer'><div id='timer'></div></div>"
+    }
 
     SlySuite.KOTimer.firstrun = function() {
 
@@ -110,12 +207,35 @@ runScript(function() {
         setTimeout(SlySuite.KOTimer.update, 1000);
 
     };
+    SlySuite.RiverColours = {
+        initialized: false
+    }
+
+    SlySuite.RiverColours.init = function() {
+        if (typeof(Map.Helper) == 'undefined')
+            return;
+        SlySuite.RiverColours.initialized = true;
+        SlySuite.RiverColours.oldScript = Map.Helper.imgPath.lookForModification.bind({});
+        Map.Helper.imgPath.lookForModification = function(path, d) {
+            if (/river|deco_egg_05|quests_fluss/.test(path) && SlySuite.getPreference('RiverColours') != 'default') {
+                return SlySuite.getPreference('RiverColours') + '/' + path;
+            } else
+                return SlySuite.RiverColours.oldScript(path, d);
+
+        }
+        SlySuite.RiverColours.changeColour = function() {
+            Map.Helper.imgPath.clearCache();
+            Map.refresh(true);
+        }
+    };
 
 
-    if (SlySuite.getPreference('KOTimer'))
-        SlySuite.KOTimer.firstrun();
 
 
 
 
+
+
+
+    SlySuite.init();
 });
