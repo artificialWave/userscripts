@@ -3,7 +3,7 @@
 // @include         http://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
-// @version         1.0
+// @version         1.1
 // @description     A collection of enhancements for the browsergame The West
 // @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
@@ -27,7 +27,7 @@ runScript(function() {
             KOTimer: true,
             RiverColours: "default",
             Experience: false,
-            Achievements: false
+            Achievements: true
         },
         possibleRiverColours: {
             Default: 'default',
@@ -49,7 +49,7 @@ runScript(function() {
 
         },
         images: {
-            achievs: 'http://i300.photobucket.com/albums/nn22/qwexrty/achievs_zps4c5d9ee3.jpg',
+            achievements: 'http://i300.photobucket.com/albums/nn22/qwexrty/achievs_zps4c5d9ee3.jpg',
             settings: 'http://i300.photobucket.com/albums/nn22/qwexrty/settings_zpsa8c2f112.jpg'
         },
         init: function() {
@@ -64,13 +64,18 @@ runScript(function() {
 
             localStorage.getObject('SlySuite') == null ? localStorage.setObject('SlySuite', this.preferences) : this.preferences = localStorage.getObject('SlySuite');
             SlySuite.createSettingsButton();
+
             if (SlySuite.getPreference('KOTimer'))
                 SlySuite.KOTimer.firstrun();
+
             $(setTimeout(function() {
                 SlySuite.RiverColours.init();
                 if (SlySuite.getPreference('RiverColours') != 'default')
                     SlySuite.RiverColours.changeColour();
             }, 5000));
+
+            if (SlySuite.getPreference('Achievements'))
+                SlySuite.Achievements.init();
 
         },
         createSettingsButton: function() {
@@ -121,9 +126,11 @@ runScript(function() {
                     content += "<option value=\"" + colours[c] + "\">" + c + "</option>";
 
             }
-            content += "</select>";
+            content += "</select><br />";
+            this.getPreference('Achivements') == true ? check = " checked='checked'" : check = "";
+            content += "<input type='checkbox' id='Achievements_checkbox'" + check + " onchange=\"SlySuite.setPreference('Achievements',this.checked)\"><label for='Achievements_checkbox'>Achievement tracker</label><br />";
             content += "<br /><br />";
-            content += "Some settings require a refresh to apply.";
+            content += "Some settings might need a refresh to apply";
             content += "</div>";
             return content;
         }
@@ -134,7 +141,7 @@ runScript(function() {
         timeleft: 0,
         aliveAgain: 0,
         image: "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' id='knockouttimer'><div id='timer'></div></div>"
-    }
+    };
 
     SlySuite.KOTimer.firstrun = function() {
 
@@ -209,7 +216,7 @@ runScript(function() {
     };
     SlySuite.RiverColours = {
         initialized: false
-    }
+    };
 
     SlySuite.RiverColours.init = function() {
         if (typeof(Map.Helper) == 'undefined')
@@ -229,6 +236,74 @@ runScript(function() {
         }
     };
 
+    SlySuite.Achievements = {
+        list: {},
+        init: function() {
+            $(function() {
+                SlySuite.Achievements.createWindow();
+            });
+            this.createButton();
+        },
+        createWindow: function() {
+            if (typeof(Map.width) == 'undefined' || Map.width == 0) {
+                setTimeout(SlySuite.Achievements.createWindow, 3000);
+                return;
+            }
+            this.window = wman.open('achievementtracker', null, 'chat questtracker noclose nocloseall noreload dontminimize')
+                .setMiniTitle('Achievement tracker')
+                .setSize(350, 220)
+                .addEventListener(TWE('WINDOW_MINIMIZE'), this.minimize, this)
+                .addEventListener(TWE('WINDOW_CLOSEALL_OPEN'), this.minimize, this)
+                .addEventListener(TWE('WINDOW_CLOSEALL'), this.minimize, this)
+                .addEventListener(TWE('WINDOW_CLOSE'), this.minimize, this)
+                .setResizeable(true)
+                .appendToContentPane();
+
+            this.window.addTab('<div class="questbook" title="Achievement Tracker"></div> Achievement Tracker', 'achievementtracker');
+
+            this.window.dontCloseAll = true;
+
+            $(this.window.getMainDiv()).css({
+                left: Map.width - 425,
+                top: 400
+            });
+        },
+        createButton: function() {
+            var bottom = $('<div></div>').attr({
+                'class': 'menucontainer_bottom'
+            });
+
+            var icon = $('<div></div>').attr({
+                'class': 'menulink',
+                'title': "Open Achievement Tracker"
+            }).css({
+                'background-image': 'url(' + SlySuite.images.achievements + ')',
+                'background-position': '0px 0px'
+            }).mouseleave(function() {
+                $(this).css("background-position", "0px 0px");
+            }).mouseenter(function(e) {
+                $(this).css("background-position", "-25px 0px");
+            }).click(function() {
+                SlySuite.Achievements.openWindow();
+            });
+
+            $('#ui_menubar .ui_menucontainer :last').after($('<div></div>').attr({
+                'class': 'ui_menucontainer',
+                'id': 'Achievementtracker_button'
+            }).css({
+                display: 'none'
+            }).append(icon).append(bottom));
+        },
+        minimize: function() {
+            $(this.window.divMain).hide();
+            $('#Achievementtracker_button').show();
+        },
+        openWindow: function() {
+            $(this.window.divMain).show();
+            $('#Achievementtracker_button').hide();
+        }
+
+    };
 
 
 
