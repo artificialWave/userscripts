@@ -50,7 +50,8 @@ runScript(function() {
         },
         images: {
             achievements: 'http://i300.photobucket.com/albums/nn22/qwexrty/achievs_zps4c5d9ee3.jpg',
-            settings: 'http://i300.photobucket.com/albums/nn22/qwexrty/settings_zpsa8c2f112.jpg'
+            settings: 'http://i300.photobucket.com/albums/nn22/qwexrty/settings_zpsa8c2f112.jpg',
+            achievement_icon: 'http://i300.photobucket.com/albums/nn22/qwexrty/questbook2_zpsf9bfe431.png'
         },
         init: function() {
             Storage.prototype.setObject = function(key, value) {
@@ -62,7 +63,7 @@ runScript(function() {
                 return value && JSON.parse(value);
             }
 
-            localStorage.getObject('SlySuite') == null ? localStorage.setObject('SlySuite', this.preferences) : this.preferences = localStorage.getObject('SlySuite');
+            localStorage.getObject('SlySuite') == null ? localStorage.setObject('SlySuite', this.preferences) : $.extend(this.preferences, localStorage.getObject('SlySuite'));
             SlySuite.createSettingsButton();
 
             if (SlySuite.getPreference('KOTimer'))
@@ -127,7 +128,7 @@ runScript(function() {
 
             }
             content += "</select><br />";
-            this.getPreference('Achivements') == true ? check = " checked='checked'" : check = "";
+            this.getPreference('Achievements') == true ? check = " checked='checked'" : check = "";
             content += "<input type='checkbox' id='Achievements_checkbox'" + check + " onchange=\"SlySuite.setPreference('Achievements',this.checked)\"><label for='Achievements_checkbox'>Achievement tracker</label><br />";
             content += "<br /><br />";
             content += "Some settings might need a refresh to apply";
@@ -238,10 +239,30 @@ runScript(function() {
 
     SlySuite.Achievements = {
         list: {},
+        allFolders: [],
         init: function() {
             $(function() {
-                SlySuite.Achievements.createWindow();
+                setTimeout(function() {
+                    SlySuite.Achievements.createWindow();
+                    SlySuite.Achievements.editTracker();
+
+                    Ajax.remoteCall('achievement', '', {
+                        playerid: Character.playerId
+                    }, function(resp) {
+                        if (resp.error) return new MessageError(resp.msg).show();
+                        console.log(resp);
+                        for (f in resp.menu) {
+                            if (resp.menu[f].id == 'overall' || resp.menu[f].id == 'heroics')
+                                continue;
+                            if ('id' in resp.menu[f]) SlySuite.Achievements.allFolders.push(resp.menu[f].id);
+                            for (s in resp.menu[f].sub)
+                                if ('id' in resp.menu[f].sub[s]) SlySuite.Achievements.allFolders.push(resp.menu[f].sub[s].id);
+                        }
+                    });
+
+                }, 5000);
             });
+
             this.createButton();
         },
         createWindow: function() {
@@ -266,6 +287,12 @@ runScript(function() {
             $(this.window.getMainDiv()).css({
                 left: Map.width - 425,
                 top: 400
+            });
+            $('._tab_id_achievementtracker .tw2gui_window_tab_text .questbook').css({
+                'background-image': 'url(' + SlySuite.images.achievement_icon + ')'
+            });
+            $('#windows .tw2gui_window.questtracker .tw2gui_window_tabbar_tabs').attr({
+                'style': 'left:2px !important;'
             });
         },
         createButton: function() {
@@ -301,6 +328,51 @@ runScript(function() {
         openWindow: function() {
             $(this.window.divMain).show();
             $('#Achievementtracker_button').hide();
+        },
+        editTracker: function() {
+            SlySuite.Achievements.oldTracker = Character.trackAchievement;
+            Character.trackAchievement = function(a, b) {
+                SlySuite.Achievements.trackAchievement(a, b);
+            };
+        },
+        trackAchievement: function(progress, update) {
+            if (!SlySuite.preferences.Achievements) {
+                SlySuite.Achievements.oldTracker(progress, update);
+                return;
+            }
+            var params = progress.split('-');
+            console.log(params);
+            // achievement done, track next one in group
+            if (!update || params[2]) {
+                var achvId = (params[2]) ? params[2] : params[0];
+                this.addAchievement(achvId);
+            } else {
+                this.addAchievement(params[1]);
+            }
+
+        },
+        addAchievement: function(achi) {
+            if (achi in this.list)
+                delete this.list[achi];
+            else
+                this.list[achi] = new Object();
+        },
+        update: function() {
+            folders = [];
+            for (a in this.list) {
+                if ('folder' in this.list[a]) {
+                    folders.push(this.list[a].folder);
+                } else {
+                    this.queryServer(this.allFolders);
+                    return;
+                }
+
+            }
+            queryServer(folders);
+
+        },
+        queryServer: function(arr) {
+
         }
 
     };
