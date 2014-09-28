@@ -238,7 +238,7 @@ runScript(function() {
     };
 
     SlySuite.Achievements = {
-        list: {},
+        achievementsList: {},
         allFolders: [],
         init: function() {
             $(function() {
@@ -248,15 +248,16 @@ runScript(function() {
 
                     Ajax.remoteCall('achievement', '', {
                         playerid: Character.playerId
-                    }, function(resp) {
-                        if (resp.error) return new MessageError(resp.msg).show();
-                        console.log(resp);
-                        for (f in resp.menu) {
-                            if (resp.menu[f].id == 'overall' || resp.menu[f].id == 'heroics')
+                    }, function(r) {
+                        if (r.error) return new MessageError(r.msg).show();
+                        console.log(r);
+                        for (f in r.menu) {
+                            if (!('id' in r.menu[f])) continue;
+                            if (r.menu[f].id == 'overall' || r.menu[f].id == 'heroics')
                                 continue;
-                            if ('id' in resp.menu[f]) SlySuite.Achievements.allFolders.push(resp.menu[f].id);
-                            for (s in resp.menu[f].sub)
-                                if ('id' in resp.menu[f].sub[s]) SlySuite.Achievements.allFolders.push(resp.menu[f].sub[s].id);
+                            SlySuite.Achievements.allFolders.push(r.menu[f].id);
+                            for (sub in r.menu[f].sub)
+                                if ('id' in r.menu[f].sub[sub]) SlySuite.Achievements.allFolders.push(r.menu[f].sub[sub].id);
                         }
                     });
 
@@ -270,19 +271,22 @@ runScript(function() {
                 setTimeout(SlySuite.Achievements.createWindow, 3000);
                 return;
             }
+            this.scrolling = new west.gui.Scrollpane(null).appendContent(
+                "<div class='achievement_tracker_container' />"
+            );
             this.window = wman.open('achievementtracker', null, 'chat questtracker noclose nocloseall noreload dontminimize')
                 .setMiniTitle('Achievement tracker')
                 .setSize(350, 220)
                 .addEventListener(TWE('WINDOW_MINIMIZE'), this.minimize, this)
-                .addEventListener(TWE('WINDOW_CLOSEALL_OPEN'), this.minimize, this)
-                .addEventListener(TWE('WINDOW_CLOSEALL'), this.minimize, this)
                 .addEventListener(TWE('WINDOW_CLOSE'), this.minimize, this)
+                .addEventListener(TWE('WINDOW_RELOAD'), this.updateAchievements, this)
                 .setResizeable(true)
-                .appendToContentPane();
+                .appendToContentPane($("<div id='ui_achievementtracker'/>").append(this.scrolling.getMainDiv()));
 
-            this.window.addTab('<div class="questbook" title="Achievement Tracker"></div> Achievement Tracker', 'achievementtracker');
+            this.window.addTab('<div class="questbook" title="Achievement Tracker"></div> Achievement Tracker', 'achievementtracker', function() {});
 
             this.window.dontCloseAll = true;
+            this.addCss();
 
             $(this.window.getMainDiv()).css({
                 left: Map.width - 425,
@@ -294,6 +298,8 @@ runScript(function() {
             $('#windows .tw2gui_window.questtracker .tw2gui_window_tabbar_tabs').attr({
                 'style': 'left:2px !important;'
             });
+            this.setAchievement(3);
+            this.setAchievement(50);
         },
         createButton: function() {
             var bottom = $('<div></div>').attr({
@@ -345,23 +351,60 @@ runScript(function() {
             // achievement done, track next one in group
             if (!update || params[2]) {
                 var achvId = (params[2]) ? params[2] : params[0];
-                this.addAchievement(achvId);
+                this.setAchievement(achvId);
             } else {
-                this.addAchievement(params[1]);
+                this.setAchievement(params[1]);
             }
 
         },
-        addAchievement: function(achi) {
-            if (achi in this.list)
-                delete this.list[achi];
-            else
-                this.list[achi] = new Object();
+        setAchievement: function(achi) {
+            if (achi in this.achievementsList) {
+                delete this.achievementsList[achi];
+                this.removeFromTracker(achi);
+            } else {
+                this.achievementsList[achi] = new Object();
+
+                this.getAchievementData(achi);
+            }
         },
-        update: function() {
+        updateTracker: function(achi) {
+            if ($('#ui_achievementtracker #achievementtracker_' + achi).length > 0) {
+                $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_current').html(this.achievementsList[achi].current);
+                $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_percentage').html(Math.floor(this.achievementsList[achi].current / this.achievementsList[achi].required * 100));
+            } else {
+                $('#ui_achievementtracker .achievement_tracker_container').append('<div class="selectable" id="achievementtracker_' + achi + '">' +
+                    '<div class="quest-list title">' + this.achievementsList[achi].title +
+                    '<span class="quest-list remove" title="Remove achievement from tracker"></span></div>' +
+                    '<ul class="requirement_container"><li class="quest_requirement">- <span class="achievement_current">' + this.achievementsList[achi].current +
+                    '</span> / <span class="achievement_required">' + this.achievementsList[achi].required + '</span> (<span class="achievement_percentage">' +
+                    (Math.floor(this.achievementsList[achi].current / this.achievementsList[achi].required * 100)) + '</span>%)</li></ul></div>');
+                $('#ui_achievementtracker #achievementtracker_' + achi + ' .quest-list.remove').click(function() {
+                    SlySuite.Achievements.setAchievement(achi);
+                });
+            }
+        },
+        getAchievementData: function(achi) {
+            Ajax.remoteCall('achievement', 'track', {
+                achvid: achi
+            }, function(resp) {
+                if (resp.error) return new MessageError(resp.msg).show();
+                $.extend(SlySuite.Achievements.achievementsList[achi], {
+                    title: resp.title,
+                    current: resp.current,
+                    required: resp.required
+                });
+                SlySuite.Achievements.updateTracker(achi);
+                Ajax.remoteCall('achievement', 'untrack');
+            });
+        },
+        removeFromTracker: function(achi) {
+            $('#ui_achievementtracker #achievementtracker_' + achi).remove();
+        },
+        updateAchievements: function() {
             folders = [];
-            for (a in this.list) {
-                if ('folder' in this.list[a]) {
-                    folders.push(this.list[a].folder);
+            for (a in this.achievementsList) {
+                if ('folder' in this.achievementsList[a]) {
+                    folders.push(this.achievementsList[a].folder);
                 } else {
                     this.queryServer(this.allFolders);
                     return;
@@ -373,6 +416,17 @@ runScript(function() {
         },
         queryServer: function(arr) {
 
+        },
+        addCss: function() {
+            achievementCss = '';
+            achievementCss += "#ui_achievementtracker .quest-list.title {margin-left:5px;color: #DBA901;font-weight: bold;display:inline-block;zoom:1; *display:inline;cursor:pointer;}\n";
+            achievementCss += "#ui_achievementtracker .selectable:hover .quest-list.remove {display:inline-block;zoom:1; *display:inline;}\n";
+            achievementCss += "#ui_achievementtracker .quest-list.remove {background: url('/images/chat/windowicons.png') no-repeat -120px 0px;width: 12px; height: 12px; margin-left:5px;margin-bottom:-2px;}\n";
+            achievementCss += "div#ui_achievementtracker { width: 100%; height: 100%; display:block;}"
+
+            var style = document.createElement('style');
+            style.textContent = achievementCss;
+            document.body.appendChild(style);
         }
 
     };
