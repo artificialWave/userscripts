@@ -7,6 +7,7 @@
 // @description     A collection of enhancements for the browsergame The West
 // @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
+// @namespace       https://github.com/Sepherane
 // ==/UserScript==
 
 function runScript(source) {
@@ -131,7 +132,7 @@ runScript(function() {
             this.getPreference('Achievements') == true ? check = " checked='checked'" : check = "";
             content += "<input type='checkbox' id='Achievements_checkbox'" + check + " onchange=\"SlySuite.setPreference('Achievements',this.checked)\"><label for='Achievements_checkbox'>Achievement tracker</label><br />";
             content += "<br /><br />";
-            content += "Some settings might need a refresh to apply";
+            content += "Some settings might require a refresh to apply";
             content += "</div>";
             return content;
         }
@@ -240,17 +241,19 @@ runScript(function() {
     SlySuite.Achievements = {
         achievementsList: {},
         allFolders: [],
+        lastUpdate: new Date(0),
         init: function() {
+            localStorage.getObject('SlySuite_Achievements') == null ? localStorage.setObject('SlySuite_Achievements', SlySuite.Achievements.achievementsList) : $.extend(this.achievementsList, localStorage.getObject('SlySuite_Achievements'));
             $(function() {
                 setTimeout(function() {
                     SlySuite.Achievements.createWindow();
                     SlySuite.Achievements.editTracker();
+                    SlySuite.Achievements.updateAchievements();
 
                     Ajax.remoteCall('achievement', '', {
                         playerid: Character.playerId
                     }, function(r) {
                         if (r.error) return new MessageError(r.msg).show();
-                        console.log(r);
                         for (f in r.menu) {
                             if (!('id' in r.menu[f])) continue;
                             if (r.menu[f].id == 'overall' || r.menu[f].id == 'heroics')
@@ -274,12 +277,12 @@ runScript(function() {
             this.scrolling = new west.gui.Scrollpane(null).appendContent(
                 "<div class='achievement_tracker_container' />"
             );
-            this.window = wman.open('achievementtracker', null, 'chat questtracker noclose nocloseall noreload dontminimize')
+            this.window = wman.open('achievementtracker', null, 'chat questtracker noclose nofocus nocloseall dontminimize')
                 .setMiniTitle('Achievement tracker')
                 .setSize(350, 220)
                 .addEventListener(TWE('WINDOW_MINIMIZE'), this.minimize, this)
-                .addEventListener(TWE('WINDOW_CLOSE'), this.minimize, this)
-                .addEventListener(TWE('WINDOW_RELOAD'), this.updateAchievements, this)
+                .addEventListener(TWE('WINDOW_DESTROY'), this.minimize, this)
+                .addEventListener(TWE('WINDOW_RELOAD'), this.manualUpdate, this)
                 .setResizeable(true)
                 .appendToContentPane($("<div id='ui_achievementtracker'/>").append(this.scrolling.getMainDiv()));
 
@@ -298,8 +301,6 @@ runScript(function() {
             $('#windows .tw2gui_window.questtracker .tw2gui_window_tabbar_tabs').attr({
                 'style': 'left:2px !important;'
             });
-            this.setAchievement(3);
-            this.setAchievement(50);
         },
         createButton: function() {
             var bottom = $('<div></div>').attr({
@@ -330,6 +331,7 @@ runScript(function() {
         minimize: function() {
             $(this.window.divMain).hide();
             $('#Achievementtracker_button').show();
+            wman.minimizedIds[this.window.id] = this.window;
         },
         openWindow: function() {
             $(this.window.divMain).show();
@@ -347,7 +349,6 @@ runScript(function() {
                 return;
             }
             var params = progress.split('-');
-            console.log(params);
             // achievement done, track next one in group
             if (!update || params[2]) {
                 var achvId = (params[2]) ? params[2] : params[0];
@@ -361,13 +362,32 @@ runScript(function() {
             if (achi in this.achievementsList) {
                 delete this.achievementsList[achi];
                 this.removeFromTracker(achi);
+                localStorage.setObject('SlySuite_Achievements', SlySuite.Achievements.achievementsList);
             } else {
                 this.achievementsList[achi] = new Object();
 
                 this.getAchievementData(achi);
             }
         },
+        manualUpdate: function() {
+            if (this.lastUpdate.getTime() < new Date().getTime() - 60000) {
+                this.window.showLoader();
+                clearTimeout(this.nextUpdate);
+                this.updateAchievements();
+                this.lastUpdate = new Date();
+                this.window.hideLoader();
+            } else {
+                secleft = 60 - Math.floor((new Date().getTime() - this.lastUpdate.getTime()) / 1000);
+                new MessageError("Updated too recently, try again in " + secleft + "s").show();
+            }
+
+        },
         updateTracker: function(achi) {
+            if (this.achievementsList[achi].current >= this.achievementsList[achi].required) {
+                this.setAchievement(achi);
+                return;
+            }
+
             if ($('#ui_achievementtracker #achievementtracker_' + achi).length > 0) {
                 $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_current').html(this.achievementsList[achi].current);
                 $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_percentage').html(Math.floor(this.achievementsList[achi].current / this.achievementsList[achi].required * 100));
@@ -395,32 +415,25 @@ runScript(function() {
                 });
                 SlySuite.Achievements.updateTracker(achi);
                 Ajax.remoteCall('achievement', 'untrack');
+                localStorage.setObject('SlySuite_Achievements', SlySuite.Achievements.achievementsList);
             });
         },
         removeFromTracker: function(achi) {
             $('#ui_achievementtracker #achievementtracker_' + achi).remove();
         },
         updateAchievements: function() {
-            folders = [];
-            for (a in this.achievementsList) {
-                if ('folder' in this.achievementsList[a]) {
-                    folders.push(this.achievementsList[a].folder);
-                } else {
-                    this.queryServer(this.allFolders);
-                    return;
-                }
-
+            for (a in SlySuite.Achievements.achievementsList) {
+                SlySuite.Achievements.getAchievementData(a);
             }
-            queryServer(folders);
-
+            SlySuite.Achievements.nextUpdate = setTimeout(SlySuite.Achievements.updateAchievements, 10 * 60 * 1000);
         },
         queryServer: function(arr) {
 
         },
         addCss: function() {
             achievementCss = '';
-            achievementCss += "#ui_achievementtracker .quest-list.title {margin-left:5px;color: #DBA901;font-weight: bold;display:inline-block;zoom:1; *display:inline;cursor:pointer;}\n";
-            achievementCss += "#ui_achievementtracker .selectable:hover .quest-list.remove {display:inline-block;zoom:1; *display:inline;}\n";
+            achievementCss += "#ui_achievementtracker .quest-list.title {margin-left:5px;color: #DBA901;font-weight: bold;display:inline-block;zoom:1;}\n";
+            achievementCss += "#ui_achievementtracker .selectable:hover .quest-list.remove {display:inline-block;zoom:1;cursor:pointer;}\n";
             achievementCss += "#ui_achievementtracker .quest-list.remove {background: url('/images/chat/windowicons.png') no-repeat -120px 0px;width: 12px; height: 12px; margin-left:5px;margin-bottom:-2px;}\n";
             achievementCss += "div#ui_achievementtracker { width: 100%; height: 100%; display:block;}"
 
