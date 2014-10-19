@@ -279,7 +279,8 @@ runScript(function() {
             );
             this.window = wman.open('achievementtracker', null, 'chat questtracker noclose nofocus nocloseall dontminimize')
                 .setMiniTitle('Achievement tracker')
-                .setSize(350, 220)
+                .setSize(350, 140)
+                .setMinSize(320, 140)
                 .addEventListener(TWE('WINDOW_MINIMIZE'), this.minimize, this)
                 .addEventListener(TWE('WINDOW_DESTROY'), this.minimize, this)
                 .addEventListener(TWE('WINDOW_RELOAD'), this.manualUpdate, this)
