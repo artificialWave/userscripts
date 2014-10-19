@@ -1,9 +1,4 @@
-userscripts
-===========
-
-Repository for userscripts I made, mainly for the browsergame The West
-
-<h3>Changelog</h3>
+<h3>Script Suite changelog</h3>
 
 <h4>1.1 (19 Oktober 2014)</h3>
 <p>Added the achievement tracker</p>
