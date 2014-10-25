@@ -142,7 +142,8 @@ runScript(function() {
     SlySuite.KOTimer = {
         timeleft: 0,
         aliveAgain: 0,
-        image: "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' id='knockouttimer'><div id='timer'></div></div>"
+        image: "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' id='knockouttimer'><div id='timer'></div></div>",
+        lastDied: Character.lastDied
     };
 
     SlySuite.KOTimer.firstrun = function() {
@@ -168,11 +169,21 @@ runScript(function() {
             'line-height': '30px'
         });
 
-        SlySuite.KOTimer.retrieveTimeleft();
+        SlySuite.KOTimer.retrieveTimeleft(true);
         SlySuite.KOTimer.update();
     };
 
-    SlySuite.KOTimer.retrieveTimeleft = function() {
+    SlySuite.KOTimer.retrieveTimeleft = function(forced) {
+        forced = forced || false;
+        console.log(forced);
+
+        if (forced || Character.lastDied != SlySuite.KOTimer.lastDied) {
+            SlySuite.KOTimer.lastDied = Character.lastDied;
+        } else {
+            setTimeout(SlySuite.KOTimer.retrieveTimeleft, 10000);
+            return;
+        }
+
         if (Character.homeTown.town_id != 0) // Can only request the info when you're in a town
         {
             $.post("game.php?window=building_sheriff&mode=index", {
@@ -187,7 +198,7 @@ runScript(function() {
             $('#knockouttimer').hide();
 
         }
-        setTimeout(SlySuite.KOTimer.retrieveTimeleft, 300000); // And we'll do it again in 5 minutes
+        setTimeout(SlySuite.KOTimer.retrieveTimeleft, 10000); // And we'll do it again in 10 seconds
     };
 
     SlySuite.KOTimer.update = function() {
