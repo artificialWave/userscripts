@@ -3,7 +3,7 @@
 // @include         http://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
-// @version         1.1
+// @version         1.2
 // @description     A collection of enhancements for the browsergame The West
 // @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
@@ -279,7 +279,7 @@ runScript(function() {
             );
             this.window = wman.open('achievementtracker', null, 'chat questtracker noclose nofocus nocloseall dontminimize')
                 .setMiniTitle('Achievement tracker')
-                .setSize(350, 140)
+                .setSize(350, 170)
                 .setMinSize(320, 140)
                 .addEventListener(TWE('WINDOW_MINIMIZE'), this.minimize, this)
                 .addEventListener(TWE('WINDOW_DESTROY'), this.minimize, this)
