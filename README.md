@@ -1,5 +1,8 @@
 <h3>Script Suite changelog</h3>
 
+<h4>1.3 (Not yet released)</h3>
+<p>Nothing here yet</p>
+
 <h4>1.2 (26 Oktober 2014)</h3>
 <p>- Changed achievement tracker window size to default at 3 achievements, minimum is 2<br />
 - Scriptsuite/KOTimer: Avoid unnecessary server calls and update faster when you're knocked out<br />

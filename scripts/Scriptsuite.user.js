@@ -3,7 +3,7 @@
 // @include         http://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
-// @version         1.2
+// @version         1.3
 // @description     A collection of enhancements for the browsergame The West
 // @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
