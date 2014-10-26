@@ -3,7 +3,7 @@
 // @include         http://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
-// @version         1.1
+// @version         1.2
 // @description     A collection of enhancements for the browsergame The West
 // @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
@@ -31,11 +31,12 @@ runScript(function() {
             Achievements: true
         },
         possibleRiverColours: {
-            Default: 'default',
-            Red: 'halloween',
-            Green: 'paddy',
-            Pink: 'valentine',
-            Blue: ''
+            default: 'Default',
+            halloween: 'Red',
+            paddy: 'Green',
+            valentine: 'Pink',
+            blue: 'Blue',
+            norivers: 'Hide Rivers'
         },
         getPreference: function(pref) {
             return this.preferences[pref];
@@ -122,10 +123,10 @@ runScript(function() {
             content += "<select onchange=\"SlySuite.setPreference('RiverColours',this.value);\">";
             colours = SlySuite.possibleRiverColours;
             for (c in colours) {
-                if (SlySuite.getPreference('RiverColours') == colours[c])
-                    content += "<option selected='selected' value=\"" + colours[c] + "\">" + c + "</option>";
+                if (SlySuite.getPreference('RiverColours') == c)
+                    content += "<option selected='selected' value=\"" + c + "\">" + colours[c] + "</option>";
                 else
-                    content += "<option value=\"" + colours[c] + "\">" + c + "</option>";
+                    content += "<option value=\"" + c + "\">" + colours[c] + "</option>";
 
             }
             content += "</select><br />";
@@ -142,7 +143,8 @@ runScript(function() {
     SlySuite.KOTimer = {
         timeleft: 0,
         aliveAgain: 0,
-        image: "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' id='knockouttimer'><div id='timer'></div></div>"
+        image: "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' id='knockouttimer'><div id='timer'></div></div>",
+        lastDied: Character.lastDied
     };
 
     SlySuite.KOTimer.firstrun = function() {
@@ -168,11 +170,20 @@ runScript(function() {
             'line-height': '30px'
         });
 
-        SlySuite.KOTimer.retrieveTimeleft();
+        SlySuite.KOTimer.retrieveTimeleft(true);
         SlySuite.KOTimer.update();
     };
 
-    SlySuite.KOTimer.retrieveTimeleft = function() {
+    SlySuite.KOTimer.retrieveTimeleft = function(forced) {
+        forced = forced || false;
+
+        if (forced || Character.lastDied != SlySuite.KOTimer.lastDied) {
+            SlySuite.KOTimer.lastDied = Character.lastDied;
+        } else {
+            setTimeout(SlySuite.KOTimer.retrieveTimeleft, 10000);
+            return;
+        }
+
         if (Character.homeTown.town_id != 0) // Can only request the info when you're in a town
         {
             $.post("game.php?window=building_sheriff&mode=index", {
@@ -187,7 +198,7 @@ runScript(function() {
             $('#knockouttimer').hide();
 
         }
-        setTimeout(SlySuite.KOTimer.retrieveTimeleft, 300000); // And we'll do it again in 5 minutes
+        setTimeout(SlySuite.KOTimer.retrieveTimeleft, 10000); // And we'll do it again in 10 seconds
     };
 
     SlySuite.KOTimer.update = function() {
@@ -226,8 +237,18 @@ runScript(function() {
         SlySuite.RiverColours.initialized = true;
         SlySuite.RiverColours.oldScript = Map.Helper.imgPath.lookForModification.bind({});
         Map.Helper.imgPath.lookForModification = function(path, d) {
-            if (/river|deco_egg_05|quests_fluss/.test(path) && SlySuite.getPreference('RiverColours') != 'default') {
-                return SlySuite.getPreference('RiverColours') + '/' + path;
+            $('#river_hide_css').remove();
+            if (/river|deco_egg_05|quests_fluss/.test(path) && SlySuite.getPreference('RiverColours') != 'default' && SlySuite.getPreference('RiverColours') != 'norivers') {
+                if (SlySuite.getPreference('RiverColours') == 'blue')
+                    return '/' + path;
+                else
+                    return SlySuite.getPreference('RiverColours') + '/' + path;
+            } else if (SlySuite.getPreference('RiverColours') == 'norivers') {
+                var hidingrivers = document.createElement('style');
+                hidingrivers.setAttribute("id", "river_hide_css");
+                hidingrivers.textContent = ".image[style*='river']{display:none;}";
+                document.body.appendChild(hidingrivers);
+                return SlySuite.RiverColours.oldScript(path, d);
             } else
                 return SlySuite.RiverColours.oldScript(path, d);
 
@@ -279,7 +300,7 @@ runScript(function() {
             );
             this.window = wman.open('achievementtracker', null, 'chat questtracker noclose nofocus nocloseall dontminimize')
                 .setMiniTitle('Achievement tracker')
-                .setSize(350, 140)
+                .setSize(350, 170)
                 .setMinSize(320, 140)
                 .addEventListener(TWE('WINDOW_MINIMIZE'), this.minimize, this)
                 .addEventListener(TWE('WINDOW_DESTROY'), this.minimize, this)
