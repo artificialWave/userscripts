@@ -31,11 +31,12 @@ runScript(function() {
             Achievements: true
         },
         possibleRiverColours: {
-            Default: 'default',
-            Red: 'halloween',
-            Green: 'paddy',
-            Pink: 'valentine',
-            Blue: ''
+            default: 'Default',
+            halloween: 'Red',
+            paddy: 'Green',
+            valentine: 'Pink',
+            blue: 'Blue',
+            norivers: 'Hide Rivers'
         },
         getPreference: function(pref) {
             return this.preferences[pref];
@@ -122,10 +123,10 @@ runScript(function() {
             content += "<select onchange=\"SlySuite.setPreference('RiverColours',this.value);\">";
             colours = SlySuite.possibleRiverColours;
             for (c in colours) {
-                if (SlySuite.getPreference('RiverColours') == colours[c])
-                    content += "<option selected='selected' value=\"" + colours[c] + "\">" + c + "</option>";
+                if (SlySuite.getPreference('RiverColours') == c)
+                    content += "<option selected='selected' value=\"" + c + "\">" + colours[c] + "</option>";
                 else
-                    content += "<option value=\"" + colours[c] + "\">" + c + "</option>";
+                    content += "<option value=\"" + c + "\">" + colours[c] + "</option>";
 
             }
             content += "</select><br />";
@@ -175,7 +176,6 @@ runScript(function() {
 
     SlySuite.KOTimer.retrieveTimeleft = function(forced) {
         forced = forced || false;
-        console.log(forced);
 
         if (forced || Character.lastDied != SlySuite.KOTimer.lastDied) {
             SlySuite.KOTimer.lastDied = Character.lastDied;
@@ -237,8 +237,18 @@ runScript(function() {
         SlySuite.RiverColours.initialized = true;
         SlySuite.RiverColours.oldScript = Map.Helper.imgPath.lookForModification.bind({});
         Map.Helper.imgPath.lookForModification = function(path, d) {
-            if (/river|deco_egg_05|quests_fluss/.test(path) && SlySuite.getPreference('RiverColours') != 'default') {
-                return SlySuite.getPreference('RiverColours') + '/' + path;
+            $('#river_hide_css').remove();
+            if (/river|deco_egg_05|quests_fluss/.test(path) && SlySuite.getPreference('RiverColours') != 'default' && SlySuite.getPreference('RiverColours') != 'norivers') {
+                if (SlySuite.getPreference('RiverColours') == 'blue')
+                    return '/' + path;
+                else
+                    return SlySuite.getPreference('RiverColours') + '/' + path;
+            } else if (SlySuite.getPreference('RiverColours') == 'norivers') {
+                var hidingrivers = document.createElement('style');
+                hidingrivers.setAttribute("id", "river_hide_css");
+                hidingrivers.textContent = ".image[style*='river']{display:none;}";
+                document.body.appendChild(hidingrivers);
+                return SlySuite.RiverColours.oldScript(path, d);
             } else
                 return SlySuite.RiverColours.oldScript(path, d);
 
