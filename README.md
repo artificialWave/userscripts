@@ -1,6 +1,6 @@
 <h3>Script Suite changelog</h3>
 
-<h4>1.2 (Not yet released)</h3>
+<h4>1.2 (26 Oktober 2014)</h3>
 <p>- Changed achievement tracker window size to default at 3 achievements, minimum is 2<br />
 - Scriptsuite/KOTimer: Avoid unnecessary server calls and update faster when you're knocked out<br />
 - Scriptsuite/River Colours: Added an option to hide rivers</p>
