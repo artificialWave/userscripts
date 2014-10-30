@@ -1,7 +1,8 @@
 <h3>Script Suite changelog</h3>
 
 <h4>1.3 (Not yet released)</h3>
-<p>Nothing here yet</p>
+<p>- Achievements that require a duration are shown as a duration<br />
+- Tooltip for achievement requirement added</p>
 
 <h4>1.2 (26 Oktober 2014)</h3>
 <p>- Changed achievement tracker window size to default at 3 achievements, minimum is 2<br />

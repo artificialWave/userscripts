@@ -277,7 +277,7 @@ runScript(function() {
                         SlySuite.Achievements.allFolders.push(r.menu[f].id);
                         for (sub in r.menu[f].sub)
                             if ('id' in r.menu[f].sub[sub]) SlySuite.Achievements.allFolders.push(r.menu[f].sub[sub].id);
-                            }
+                    }
                 });
                 setTimeout(function() {
                     SlySuite.Achievements.createWindow();
@@ -387,8 +387,9 @@ runScript(function() {
                 localStorage.setObject('SlySuite_Achievements', SlySuite.Achievements.achievementsList);
             } else {
                 this.achievementsList[achi] = new Object();
-
                 this.getAchievementData(achi);
+                SlySuite.Achievements.descriptionNeeded.push(parseInt(achi));
+                SlySuite.Achievements.getFolderInfo(SlySuite.Achievements.allFolders.slice());
             }
         },
         manualUpdate: function() {
@@ -409,19 +410,20 @@ runScript(function() {
                 this.setAchievement(achi);
                 return;
             }
-            
-            if(!('isTime' in this.achievementsList[achi]))
+
+            if (!('isTime' in this.achievementsList[achi]))
                 this.achievementsList[achi].isTime = false;
 
             if ($('#ui_achievementtracker #achievementtracker_' + achi).length > 0) {
                 $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_current').html(this.achievementsList[achi].isTime ? this.tcalc(this.achievementsList[achi].current) : this.achievementsList[achi].current);
                 $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_required').html(this.achievementsList[achi].isTime ? this.tcalc(this.achievementsList[achi].required) : this.achievementsList[achi].required);
                 $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_percentage').html(Math.floor(this.achievementsList[achi].current / this.achievementsList[achi].required * 100));
+                $('#ui_achievementtracker #achievementtracker_' + achi + ' .quest_requirement').attr('title', ('description' in this.achievementsList[achi] ? this.achievementsList[achi].description : ''));
             } else {
                 $('#ui_achievementtracker .achievement_tracker_container').append('<div class="selectable" id="achievementtracker_' + achi + '">' +
                     '<div class="quest-list title">' + this.achievementsList[achi].title +
                     '<span class="quest-list remove" title="Remove achievement from tracker"></span></div>' +
-                    '<ul class="requirement_container"><li class="quest_requirement">- <span class="achievement_current">' + (this.achievementsList[achi].isTime ? this.tcalc(this.achievementsList[achi].current) : this.achievementsList[achi].current) +
+                    '<ul class="requirement_container"><li class="quest_requirement" ' + ('description' in this.achievementsList[achi] ? 'title="' + this.achievementsList[achi].description + '"=' : '') + '>- <span class="achievement_current">' + (this.achievementsList[achi].isTime ? this.tcalc(this.achievementsList[achi].current) : this.achievementsList[achi].current) +
                     '</span> / <span class="achievement_required">' + (this.achievementsList[achi].isTime ? this.tcalc(this.achievementsList[achi].required) : this.achievementsList[achi].required) + '</span> (<span class="achievement_percentage">' +
                     (Math.floor(this.achievementsList[achi].current / this.achievementsList[achi].required * 100)) + '</span>%)</li></ul></div>');
                 $('#ui_achievementtracker #achievementtracker_' + achi + ' .quest-list.remove').click(function() {
@@ -449,45 +451,46 @@ runScript(function() {
         },
         updateAchievements: function() {
             SlySuite.Achievements.descriptionNeeded = [];
-            
+
             for (a in SlySuite.Achievements.achievementsList) {
                 SlySuite.Achievements.getAchievementData(a);
-                if(!('folder' in SlySuite.Achievements.achievementsList[a]))
+                if (!('folder' in SlySuite.Achievements.achievementsList[a]))
                     SlySuite.Achievements.descriptionNeeded.push(parseInt(a));
             }
             SlySuite.Achievements.nextUpdate = setTimeout(SlySuite.Achievements.updateAchievements, 10 * 60 * 1000);
-            
-            if(SlySuite.Achievements.descriptionNeeded.length > 0)
-                SlySuite.Achievements.getFolderInfo(SlySuite.Achievements.allFolders);
-            
-            
+
+            if (SlySuite.Achievements.descriptionNeeded.length > 0)
+                SlySuite.Achievements.getFolderInfo(SlySuite.Achievements.allFolders.slice());
+
+
         },
         getFolderInfo: function(arr) {
-            console.log(arr);
-            console.log(SlySuite.Achievements.descriptionNeeded);
-            if(arr.length == 0 || SlySuite.Achievements.descriptionNeeded.length == 0)
+            if (arr.length == 0 || SlySuite.Achievements.descriptionNeeded.length == 0)
                 return;
-            Ajax.remoteCall('achievement', 'get_list', {folder: arr[0], playerid: Character.playerId}, function(json) {
-                for(achieve in json.achievements.progress){
+            Ajax.remoteCall('achievement', 'get_list', {
+                folder: arr[0],
+                playerid: Character.playerId
+            }, function(json) {
+                for (achieve in json.achievements.progress) {
                     currentId = json.achievements.progress[achieve].id;
-                    if($.inArray(currentId, SlySuite.Achievements.descriptionNeeded) != -1){
-                        SlySuite.Achievements.descriptionNeeded.splice(SlySuite.Achievements.descriptionNeeded.indexOf(currentId),1);
+                    if ($.inArray(currentId, SlySuite.Achievements.descriptionNeeded) != -1) {
+                        SlySuite.Achievements.descriptionNeeded.splice(SlySuite.Achievements.descriptionNeeded.indexOf(currentId), 1);
                         SlySuite.Achievements.achievementsList[currentId].description = json.achievements.progress[achieve].desc;
                         SlySuite.Achievements.achievementsList[currentId].folder = arr[0];
-                        if(json.achievements.progress[achieve].meta[0].match('^js:')) {
+                        if (json.achievements.progress[achieve].meta[0].match('^js:')) {
                             var parts = json.achievements.progress[achieve].meta[0].split(":");
                             var func = eval(parts[1]);
-                            if(func instanceof west.gui.Progressbar) {
+                            if (func instanceof west.gui.Progressbar) {
                                 parts[4] ? SlySuite.Achievements.achievementsList[currentId].isTime = true : SlySuite.Achievements.achievementsList[currentId].isTime = false;
-                            } 
+                            }
                         }
                         SlySuite.Achievements.updateTracker(currentId);
                         localStorage.setObject('SlySuite_Achievements', SlySuite.Achievements.achievementsList);
-                    } 
-                 }
-                
-                arr.splice(0,1);
-                setTimeout(SlySuite.Achievements.getFolderInfo,2000,arr);
+                    }
+                }
+
+                arr.splice(0, 1);
+                setTimeout(SlySuite.Achievements.getFolderInfo, 2000, arr);
             });
         },
         addCss: function() {
@@ -502,15 +505,15 @@ runScript(function() {
             document.body.appendChild(style);
         },
         tcalc: function(val) {
-            var h,m,s;
+            var h, m, s;
             m = s = "00";
-            h = Math.floor(val/3600);
-            if(0!=(val%3600)) {
-                var c = val-(h*3600);
+            h = Math.floor(val / 3600);
+            if (0 != (val % 3600)) {
+                var c = val - (h * 3600);
                 minute = Math.floor(c / 60);
-                if(0!=(c%60)) s = c%60;
+                if (0 != (c % 60)) s = c % 60;
             }
-            return (h<=0?"":h+":")+m+":"+s;
+            return (h <= 0 ? "" : h + ":") + m + ":" + s;
         }
 
     };
