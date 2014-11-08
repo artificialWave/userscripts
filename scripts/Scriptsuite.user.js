@@ -3,7 +3,7 @@
 // @include         http://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
-// @version         1.2
+// @version         1.3
 // @description     A collection of enhancements for the browsergame The West
 // @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
@@ -79,6 +79,8 @@ runScript(function() {
 
             if (SlySuite.getPreference('Achievements'))
                 SlySuite.Achievements.init();
+
+            //SlySuite.CraftingWindow.init();
 
         },
         createSettingsButton: function() {
@@ -263,27 +265,28 @@ runScript(function() {
         achievementsList: {},
         allFolders: [],
         lastUpdate: new Date(0),
+        nextFolderCheck: false,
         init: function() {
             localStorage.getObject('SlySuite_Achievements') == null ? localStorage.setObject('SlySuite_Achievements', SlySuite.Achievements.achievementsList) : $.extend(this.achievementsList, localStorage.getObject('SlySuite_Achievements'));
             $(function() {
+                Ajax.remoteCall('achievement', '', {
+                    playerid: Character.playerId
+                }, function(r) {
+                    if (r.error) return new MessageError(r.msg).show();
+                    for (f in r.menu) {
+                        if (!('id' in r.menu[f])) continue;
+                        if (r.menu[f].id == 'overall' || r.menu[f].id == 'heroics')
+                            continue;
+                        SlySuite.Achievements.allFolders.push(r.menu[f].id);
+                        for (sub in r.menu[f].sub)
+                            if ('id' in r.menu[f].sub[sub]) SlySuite.Achievements.allFolders.push(r.menu[f].sub[sub].id);
+                    }
+                });
                 setTimeout(function() {
                     SlySuite.Achievements.createWindow();
                     SlySuite.Achievements.editTracker();
                     SlySuite.Achievements.updateAchievements();
 
-                    Ajax.remoteCall('achievement', '', {
-                        playerid: Character.playerId
-                    }, function(r) {
-                        if (r.error) return new MessageError(r.msg).show();
-                        for (f in r.menu) {
-                            if (!('id' in r.menu[f])) continue;
-                            if (r.menu[f].id == 'overall' || r.menu[f].id == 'heroics')
-                                continue;
-                            SlySuite.Achievements.allFolders.push(r.menu[f].id);
-                            for (sub in r.menu[f].sub)
-                                if ('id' in r.menu[f].sub[sub]) SlySuite.Achievements.allFolders.push(r.menu[f].sub[sub].id);
-                        }
-                    });
 
                 }, 5000);
             });
@@ -387,8 +390,10 @@ runScript(function() {
                 localStorage.setObject('SlySuite_Achievements', SlySuite.Achievements.achievementsList);
             } else {
                 this.achievementsList[achi] = new Object();
-
                 this.getAchievementData(achi);
+                SlySuite.Achievements.descriptionNeeded.push(parseInt(achi));
+                if (!SlySuite.Achievements.nextFolderCheck)
+                    SlySuite.Achievements.getFolderInfo(SlySuite.Achievements.allFolders.slice());
             }
         },
         manualUpdate: function() {
@@ -410,15 +415,20 @@ runScript(function() {
                 return;
             }
 
+            if (!('isTime' in this.achievementsList[achi]))
+                this.achievementsList[achi].isTime = false;
+
             if ($('#ui_achievementtracker #achievementtracker_' + achi).length > 0) {
-                $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_current').html(this.achievementsList[achi].current);
+                $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_current').html(this.achievementsList[achi].isTime ? this.tcalc(this.achievementsList[achi].current) : this.achievementsList[achi].current);
+                $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_required').html(this.achievementsList[achi].isTime ? this.tcalc(this.achievementsList[achi].required) : this.achievementsList[achi].required);
                 $('#ui_achievementtracker #achievementtracker_' + achi + ' .achievement_percentage').html(Math.floor(this.achievementsList[achi].current / this.achievementsList[achi].required * 100));
+                $('#ui_achievementtracker #achievementtracker_' + achi + ' .quest_requirement').attr('title', ('description' in this.achievementsList[achi] ? this.achievementsList[achi].description : ''));
             } else {
                 $('#ui_achievementtracker .achievement_tracker_container').append('<div class="selectable" id="achievementtracker_' + achi + '">' +
                     '<div class="quest-list title">' + this.achievementsList[achi].title +
                     '<span class="quest-list remove" title="Remove achievement from tracker"></span></div>' +
-                    '<ul class="requirement_container"><li class="quest_requirement">- <span class="achievement_current">' + this.achievementsList[achi].current +
-                    '</span> / <span class="achievement_required">' + this.achievementsList[achi].required + '</span> (<span class="achievement_percentage">' +
+                    '<ul class="requirement_container"><li class="quest_requirement" ' + ('description' in this.achievementsList[achi] ? 'title="' + this.achievementsList[achi].description + '"=' : '') + '>- <span class="achievement_current">' + (this.achievementsList[achi].isTime ? this.tcalc(this.achievementsList[achi].current) : this.achievementsList[achi].current) +
+                    '</span> / <span class="achievement_required">' + (this.achievementsList[achi].isTime ? this.tcalc(this.achievementsList[achi].required) : this.achievementsList[achi].required) + '</span> (<span class="achievement_percentage">' +
                     (Math.floor(this.achievementsList[achi].current / this.achievementsList[achi].required * 100)) + '</span>%)</li></ul></div>');
                 $('#ui_achievementtracker #achievementtracker_' + achi + ' .quest-list.remove').click(function() {
                     SlySuite.Achievements.setAchievement(achi);
@@ -444,13 +454,50 @@ runScript(function() {
             $('#ui_achievementtracker #achievementtracker_' + achi).remove();
         },
         updateAchievements: function() {
+            SlySuite.Achievements.descriptionNeeded = [];
+
             for (a in SlySuite.Achievements.achievementsList) {
                 SlySuite.Achievements.getAchievementData(a);
+                if (!('folder' in SlySuite.Achievements.achievementsList[a]))
+                    SlySuite.Achievements.descriptionNeeded.push(parseInt(a));
             }
             SlySuite.Achievements.nextUpdate = setTimeout(SlySuite.Achievements.updateAchievements, 10 * 60 * 1000);
-        },
-        queryServer: function(arr) {
 
+            if (SlySuite.Achievements.descriptionNeeded.length > 0)
+                SlySuite.Achievements.getFolderInfo(SlySuite.Achievements.allFolders.slice());
+
+
+        },
+        getFolderInfo: function(arr) {
+            if (arr.length == 0 || SlySuite.Achievements.descriptionNeeded.length == 0) {
+                SlySuite.Achievements.nextFolderCheck = false;
+                return;
+            }
+            Ajax.remoteCall('achievement', 'get_list', {
+                folder: arr[0],
+                playerid: Character.playerId
+            }, function(json) {
+                for (achieve in json.achievements.progress) {
+                    currentId = json.achievements.progress[achieve].id;
+                    if ($.inArray(currentId, SlySuite.Achievements.descriptionNeeded) != -1) {
+                        SlySuite.Achievements.descriptionNeeded.splice(SlySuite.Achievements.descriptionNeeded.indexOf(currentId), 1);
+                        SlySuite.Achievements.achievementsList[currentId].description = json.achievements.progress[achieve].desc;
+                        SlySuite.Achievements.achievementsList[currentId].folder = arr[0];
+                        if (json.achievements.progress[achieve].meta[0].match('^js:')) {
+                            var parts = json.achievements.progress[achieve].meta[0].split(":");
+                            var func = eval(parts[1]);
+                            if (func instanceof west.gui.Progressbar) {
+                                parts[4] ? SlySuite.Achievements.achievementsList[currentId].isTime = true : SlySuite.Achievements.achievementsList[currentId].isTime = false;
+                            }
+                        }
+                        SlySuite.Achievements.updateTracker(currentId);
+                        localStorage.setObject('SlySuite_Achievements', SlySuite.Achievements.achievementsList);
+                    }
+                }
+
+                arr.splice(0, 1);
+                SlySuite.Achievements.nextFolderCheck = setTimeout(SlySuite.Achievements.getFolderInfo, 2000, arr);
+            });
         },
         addCss: function() {
             achievementCss = '';
@@ -462,7 +509,67 @@ runScript(function() {
             var style = document.createElement('style');
             style.textContent = achievementCss;
             document.body.appendChild(style);
+        },
+        tcalc: function(val) {
+            var h, m, s;
+            m = s = "00";
+            h = Math.floor(val / 3600);
+            if (0 != (val % 3600)) {
+                var c = val - (h * 3600);
+                minute = Math.floor(c / 60);
+                if (0 != (c % 60)) s = c % 60;
+            }
+            return (h <= 0 ? "" : h + ":") + m + ":" + s;
         }
+
+    };
+
+    SlySuite.CraftingWindow = {
+
+        old: $.extend({}, Crafting),
+        init: function() {
+            Crafting.addRecipe = SlySuite.CraftingWindow.addRecipe;
+            Crafting.search = SlySuite.CraftingWindow.search;
+
+            SlySuite.CraftingWindow.addCss();
+        },
+        addRecipe: function(recipe) {
+            var time_last_craft = recipe.last_craft;
+            var recipe = ItemManager.get(recipe.item_id);
+            if (window.CharacterWindow.window != undefined && window.CharacterWindow.window.$('#crafting_recipe_list').length > 0) {
+                var recipe_div = $("<div id='recipe" + recipe.item_id + "'></div>");
+                var recipe_title_inner_div = $("<div class='recipe_title_inner' onclick='Crafting.collapseRecipe(" + recipe.item_id + ");' />");
+                var recipe_title_div = $("<div id='recipe_title_" + recipe.item_id + "' class='recipe_title'></div>");
+                var recipe_collapse_div = $("<div id='recipe_collapse_" + recipe.item_id + "' class='recipe_collapse'>+</div>");
+                var recipe_difficult_div = $("<div id='recipe_difficult_" + recipe.item_id + "' class='recipe_difficult " + Crafting.getRecipeColor(recipe) + "' title='" + Crafting.description.escapeHTML() + "'></div>");
+                var recipe_name_div = $("<div id='recipe_name" + recipe.item_id + "' class='recipe_name'>" + recipe.name + "</div>");
+                var recipe_craft_div = $("<div id='recipe_craft_" + recipe.item_id + "' class='recipe_craft'></div>");
+                var recipe_content_div = $("<div id='recipe_content_" + recipe.item_id + "' class='recipe_content'></div>").hide();
+                var recipe_craftitem_div = $("<div id='recipe_craftitem_" + recipe.item_id + "' class='recipe_craftitem'></div>");
+                var recipe_resources_content_div = $("<div id='recipe_resources_content_" + recipe.item_id + "' class='recipe_resources'></div>");
+
+                recipe_name_div.appendTo(recipe_div);
+                CharacterWindow.Crafting.scrollpane.appendContent(recipe_div);
+            }
+        },
+        search: function() {
+            var myrxp = new RegExp("^.*" + window.CharacterWindow.window.$('#search').val() + "(.*)$", "i");
+            for (var k in Crafting.recipes) {
+                if (!myrxp.test(this.recipes[k].name)) {
+                    window.CharacterWindow.window.$('#recipe' + k).slideUp();
+                } else {
+                    window.CharacterWindow.window.$('#recipe' + k).slideDown();
+                }
+            }
+        },
+        addCss: function() {
+            var css = '';
+            css += '#crafting_recipe_list { top:43px;background:rgba(0,0,0,0.6);}';
+
+            $('body').append('<style>' + css + '</style>');
+        }
+
+
 
     };
 

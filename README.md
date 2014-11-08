@@ -1,5 +1,9 @@
 <h3>Script Suite changelog</h3>
 
+<h4>1.3 (8 November 2014)</h3>
+<p>- Achievements that require a duration are shown as a duration<br />
+- Tooltip for achievement requirement added</p>
+
 <h4>1.2 (26 Oktober 2014)</h3>
 <p>- Changed achievement tracker window size to default at 3 achievements, minimum is 2<br />
 - Scriptsuite/KOTimer: Avoid unnecessary server calls and update faster when you're knocked out<br />
