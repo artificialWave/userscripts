@@ -1,6 +1,6 @@
 <h3>Script Suite changelog</h3>
 
-<h4>1.3 (Not yet released)</h3>
+<h4>1.3 (8 November 2014)</h3>
 <p>- Achievements that require a duration are shown as a duration<br />
 - Tooltip for achievement requirement added</p>
 
