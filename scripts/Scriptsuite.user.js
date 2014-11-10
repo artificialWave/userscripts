@@ -28,7 +28,8 @@ runScript(function() {
             KOTimer: true,
             RiverColours: "default",
             Experience: false,
-            Achievements: true
+            Achievements: true,
+            CraftingWindow: false
         },
         possibleRiverColours: {
             default: 'Default',
@@ -80,7 +81,8 @@ runScript(function() {
             if (SlySuite.getPreference('Achievements'))
                 SlySuite.Achievements.init();
 
-            SlySuite.CraftingWindow.init();
+            if (SlySuite.getPreference('CraftingWindow'))
+                SlySuite.CraftingWindow.init();
 
         },
         createSettingsButton: function() {
@@ -134,6 +136,8 @@ runScript(function() {
             content += "</select><br />";
             this.getPreference('Achievements') == true ? check = " checked='checked'" : check = "";
             content += "<input type='checkbox' id='Achievements_checkbox'" + check + " onchange=\"SlySuite.setPreference('Achievements',this.checked)\"><label for='Achievements_checkbox'>Achievement tracker</label><br />";
+            this.getPreference('CraftingWindow') == true ? check = " checked='checked'" : check = "";
+            content += "<input type='checkbox' id='CraftingWindow_checkbox'" + check + " onchange=\"SlySuite.setPreference('CraftingWindow',this.checked)\"><label for='CraftingWindow_checkbox'>Improved crafting window</label><br />";
             content += "<br /><br />";
             content += "Some settings might require a refresh to apply";
             content += "</div>";

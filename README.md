@@ -1,6 +1,6 @@
 <h3>Script Suite changelog</h3>
 
-<h4>1.4 (Not yet released)</h4>
+<h4>1.4 (10 November 2014)</h4>
 <p>- Improved crafting window</p>
 
 <h4>1.3 (8 November 2014)</h4>
