@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            The West Script Suite
-// @include         http://*.the-west.*/game.php*
+// @include         http*://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
 // @version         1.4
@@ -149,20 +149,25 @@ runScript(function() {
     SlySuite.KOTimer = {
         timeleft: 0,
         aliveAgain: 0,
-        image: "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' id='knockouttimer'><div id='timer'></div></div>",
-        lastDied: Character.lastDied
+        timers: "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' class='brown' id='knockouttimer'><div id='timer'></div></div>",
+        lastDied: Character.lastDied,
+        image_brown: "http://i300.photobucket.com/albums/nn22/qwexrty/knockout_sprite_zpsa87b8b68.png",
+        image_green: "http://i300.photobucket.com/albums/nn22/qwexrty/knockout_sprite_green_zpsb8aa3008.png"
     };
 
     SlySuite.KOTimer.firstrun = function() {
 
         if ($('.game_notification_area').length > 0) {
-            $('.game_notification_area').append(this.image);
+            $('.game_notification_area').append(this.timers);
         } else {
             setTimeout(SlySuite.KOTimer.firstrun, 3000);
             console.log('Couldn\'t find the notification area, trying again soon...');
             return;
         }
-        $('#knockouttimer').css('background-image', 'url("http://i300.photobucket.com/albums/nn22/qwexrty/knockout_sprite_zps97503234.png")');
+        $('body').append('<style>#knockouttimer.green {background-image: url("' + this.image_green + '");} #knockouttimer.brown {background-image: url("' + this.image_brown + '");}</style>');
+        $('#knockouttimer').attr({
+            'title': "Ready to duel<br />Protected until: 12/2/2015 23:50:12"
+        });
 
         $('#knockouttimer #timer').css({
             'position': 'absolute',
@@ -175,60 +180,73 @@ runScript(function() {
             'height': '30px',
             'line-height': '30px'
         });
-
-        SlySuite.KOTimer.retrieveTimeleft(true);
+        SlySuite.KOTimer.getTimes();
         SlySuite.KOTimer.update();
     };
 
-    SlySuite.KOTimer.retrieveTimeleft = function(forced) {
-        forced = forced || false;
-
-        if (forced || Character.lastDied != SlySuite.KOTimer.lastDied) {
-            SlySuite.KOTimer.lastDied = Character.lastDied;
-        } else {
-            setTimeout(SlySuite.KOTimer.retrieveTimeleft, 10000);
-            return;
-        }
-
-        if (Character.homeTown.town_id != 0) // Can only request the info when you're in a town
-        {
-            $.post("game.php?window=building_sheriff&mode=index", {
-                town_id: Character.homeTown.town_id
-            }, function(data) {
-                SlySuite.KOTimer.timeleft = data.timeleft;
-                SlySuite.KOTimer.aliveAgain = Math.round(new Date().getTime() / 1000) + data.timeleft;
-            });
-        } else // We'll hide the image when you're not in a town
-        {
-            SlySuite.KOTimer.aliveAgain = 0;
-            $('#knockouttimer').hide();
-
-        }
-        setTimeout(SlySuite.KOTimer.retrieveTimeleft, 10000); // And we'll do it again in 10 seconds
-    };
-
-    SlySuite.KOTimer.update = function() {
+    SlySuite.KOTimer.getTimes = function() {
         var unix = Math.round(new Date().getTime() / 1000);
-        aliveAgain = SlySuite.KOTimer.aliveAgain;
-        if (aliveAgain < unix) {
+        SlySuite.KOTimer.aliveAgain = Character.getMandatoryDuelProtection();
+        SlySuite.KOTimer.protectedUntil = Character.getDuelProtection();
+
+        if (SlySuite.KOTimer.protectedUntil < unix) {
             $('#knockouttimer').hide();
-            setTimeout(SlySuite.KOTimer.update, 10000);
+            setTimeout(SlySuite.KOTimer.getTimes, 10000);
             return;
         } else
             $('#knockouttimer').show();
 
-        difference = aliveAgain - unix;
+        var duelString = "";
+        var protectionString = "";
+        serverDateAlive = get_server_date_string(false, SlySuite.KOTimer.aliveAgain * 1000, true);
+        serverDateProtection = get_server_date_string(false, SlySuite.KOTimer.protectedUntil * 1000, true);
+        serverDateAlive = serverDateAlive.split(" ")[1] + " " + serverDateAlive.split(" ")[0];
+        serverDateProtection = serverDateProtection.split(" ")[1] + " " + serverDateProtection.split(" ")[0];
+        if (SlySuite.KOTimer.aliveAgain < unix) {
+            duelString = "Ready to duel";
+            if ($('#knockouttimer').hasClass('brown')) {
+                $('#knockouttimer').removeClass('brown hasMousePopup').addClass('green');
+            }
+        } else {
+            duelString = "Can duel again at: " + serverDateAlive;
+            if ($('#knockouttimer').hasClass('green')) {
+                $('#knockouttimer').removeClass('green hasMousePopup').addClass('brown');
+            }
+        }
+        protectionString = "Protected until: " + serverDateProtection;
+        if (!$('#knockouttimer').hasClass('hasMousePopup')) $('#knockouttimer').attr({
+            'title': duelString + "<br />" + protectionString
+        });
+
+        setTimeout(SlySuite.KOTimer.getTimes, 10000);
+    };
+
+    SlySuite.KOTimer.update = function() {
+        if (!SlySuite.KOTimer.aliveAgain) {
+            $('#knockouttimer').hide();
+            setTimeout(SlySuite.KOTimer.update, 1000);
+            return;
+        }
+        $('#knockouttimer').show();
+        var unix = Math.round(new Date().getTime() / 1000);
+
+        if (SlySuite.KOTimer.aliveAgain < unix) {
+            time = SlySuite.KOTimer.protectedUntil;
+            $('#knockouttimer').removeClass('brown').addClass('green');
+        } else {
+            time = SlySuite.KOTimer.aliveAgain;
+            $('#knockouttimer').removeClass('green').addClass('brown');
+        }
+
+        difference = time - unix;
         hours = Math.floor(difference / 60 / 60);
         difference -= hours * 60 * 60;
         minutes = Math.floor(difference / 60);
         difference -= minutes * 60;
+        seconds = difference;
+        if (seconds < 0) seconds = 0;
 
-        if (hours == 0 && minutes == 0)
-            $('#knockouttimer #timer').html(Math.round(difference) + 's');
-        else if (hours == 0)
-            $('#knockouttimer #timer').html(minutes + 'm');
-        else
-            $('#knockouttimer #timer').html(hours + 'h:' + minutes + 'm');
+        $('#knockouttimer #timer').html(("0" + hours).slice(-2) + ':' + ("0" + minutes).slice(-2) + ':' + ("0" + seconds).slice(-2));
 
         setTimeout(SlySuite.KOTimer.update, 1000);
 
