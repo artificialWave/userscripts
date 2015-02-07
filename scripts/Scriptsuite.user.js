@@ -3,7 +3,7 @@
 // @include         http*://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
-// @version         1.4
+// @version         1.5
 // @description     A collection of enhancements for the browsergame The West
 // @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
@@ -149,6 +149,7 @@ runScript(function() {
     SlySuite.KOTimer = {
         timeleft: 0,
         aliveAgain: 0,
+        protectedUntil: 0,
         timers: "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' class='brown' id='knockouttimer'><div id='timer'></div></div>",
         lastDied: Character.lastDied,
         image_brown: "http://i300.photobucket.com/albums/nn22/qwexrty/knockout_sprite_zpsa87b8b68.png",
@@ -189,13 +190,6 @@ runScript(function() {
         SlySuite.KOTimer.aliveAgain = Character.getMandatoryDuelProtection();
         SlySuite.KOTimer.protectedUntil = Character.getDuelProtection();
 
-        if (SlySuite.KOTimer.protectedUntil < unix) {
-            $('#knockouttimer').hide();
-            setTimeout(SlySuite.KOTimer.getTimes, 10000);
-            return;
-        } else
-            $('#knockouttimer').show();
-
         var duelString = "";
         var protectionString = "";
         serverDateAlive = get_server_date_string(false, SlySuite.KOTimer.aliveAgain * 1000, true);
@@ -214,11 +208,9 @@ runScript(function() {
             }
         }
         protectionString = "Protected until: " + serverDateProtection;
-        if (!$('#knockouttimer').hasClass('hasMousePopup')) $('#knockouttimer').attr({
+        $('#knockouttimer').attr({
             'title': duelString + "<br />" + protectionString
         });
-
-        setTimeout(SlySuite.KOTimer.getTimes, 10000);
     };
 
     SlySuite.KOTimer.update = function() {
@@ -227,9 +219,15 @@ runScript(function() {
             setTimeout(SlySuite.KOTimer.update, 1000);
             return;
         }
-        $('#knockouttimer').show();
         var unix = Math.round(new Date().getTime() / 1000);
-
+        if (SlySuite.KOTimer.protectedUntil != Character.getDuelProtection())
+            SlySuite.KOTimer.getTimes();
+        if (SlySuite.KOTimer.protectedUntil < unix) {
+            $('#knockouttimer').hide();
+            setTimeout(SlySuite.KOTimer.update, 10000);
+            return;
+        } else
+            $('#knockouttimer').show();
         if (SlySuite.KOTimer.aliveAgain < unix) {
             time = SlySuite.KOTimer.protectedUntil;
             $('#knockouttimer').removeClass('brown').addClass('green');
