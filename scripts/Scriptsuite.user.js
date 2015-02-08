@@ -574,6 +574,8 @@ runScript(function() {
 
         },
         craftCount: function(id) {
+            if (!id)
+                return 0;
             var canCraft = 10000;
             for (var i in Crafting.recipes[id].resources) {
                 if (!Crafting.recipes[id].resources.hasOwnProperty((i))) continue;
@@ -751,12 +753,6 @@ runScript(function() {
 
 
     };
-
-
-
-
-
-
 
 
     SlySuite.init();
