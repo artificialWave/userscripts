@@ -415,11 +415,13 @@ runScript(function() {
                 this.removeFromTracker(achi);
                 localStorage.setObject('SlySuite_Achievements', SlySuite.Achievements.achievementsList);
             } else {
+                SlySuite.Achievements.openWindow();
                 this.achievementsList[achi] = new Object();
                 this.getAchievementData(achi);
                 SlySuite.Achievements.descriptionNeeded.push(parseInt(achi));
                 if (!SlySuite.Achievements.nextFolderCheck)
                     SlySuite.Achievements.getFolderInfo(SlySuite.Achievements.allFolders.slice());
+
             }
         },
         manualUpdate: function() {
@@ -478,9 +480,14 @@ runScript(function() {
         },
         removeFromTracker: function(achi) {
             $('#ui_achievementtracker #achievementtracker_' + achi).remove();
+            if (Object.keys(SlySuite.Achievements.achievementsList).length == 0)
+                SlySuite.Achievements.minimize();
         },
         updateAchievements: function() {
             SlySuite.Achievements.descriptionNeeded = [];
+
+            if (Object.keys(SlySuite.Achievements.achievementsList).length == 0)
+                SlySuite.Achievements.minimize();
 
             for (var a in SlySuite.Achievements.achievementsList) {
                 SlySuite.Achievements.getAchievementData(a);

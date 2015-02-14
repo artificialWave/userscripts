@@ -1,6 +1,6 @@
 <h3>Script Suite changelog</h3>
 
-<h4>1.6 (Not yet released)</h4>
+<h4>1.6 (14 February 2015)</h4>
 <p>- Added experience bar enhancement</p>
 
 <h4>1.5 (9 February 2015)</h4>
