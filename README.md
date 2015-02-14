@@ -1,5 +1,12 @@
 <h3>Script Suite changelog</h3>
 
+<h4>1.6 (14 February 2015)</h4>
+<p>- Added experience bar enhancement</p>
+
+<h4>1.5 (9 February 2015)</h4>
+<p>- Updated KO timer for new KO regulations <br />
+- Fixed an issue with the improved crafting window</p>
+
 <h4>1.4 (10 November 2014)</h4>
 <p>- Improved crafting window</p>
 

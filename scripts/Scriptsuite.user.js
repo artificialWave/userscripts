@@ -3,7 +3,7 @@
 // @include         http*://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
-// @version         1.5
+// @version         1.6
 // @description     A collection of enhancements for the browsergame The West
 // @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
@@ -28,8 +28,9 @@ runScript(function() {
             KOTimer: true,
             RiverColours: "default",
             Experience: false,
-            Achievements: true,
-            CraftingWindow: false
+            Achievements: false,
+            CraftingWindow: false,
+            ExpBar: false
         },
         possibleRiverColours: {
             default: 'Default',
@@ -84,6 +85,9 @@ runScript(function() {
             if (SlySuite.getPreference('CraftingWindow'))
                 SlySuite.CraftingWindow.init();
 
+            if (SlySuite.getPreference('ExpBar'))
+                SlySuite.ExpBar.init();
+
         },
         createSettingsButton: function() {
 
@@ -121,8 +125,6 @@ runScript(function() {
         generateWindowContent: function() {
             content = "";
             content += "<div style=\"margin-left:5px;\">";
-            this.getPreference('KOTimer') == true ? check = " checked='checked'" : check = "";
-            content += "<input type='checkbox' id='KOtimer_checkbox'" + check + " onchange=\"SlySuite.setPreference('KOTimer',this.checked)\"><label for='KOtimer_checkbox'>Knockout Timer</label><br />";
             content += "River colour ";
             content += "<select onchange=\"SlySuite.setPreference('RiverColours',this.value);\">";
             colours = SlySuite.possibleRiverColours;
@@ -134,10 +136,14 @@ runScript(function() {
 
             }
             content += "</select><br />";
+            this.getPreference('KOTimer') == true ? check = " checked='checked'" : check = "";
+            content += "<input type='checkbox' id='KOtimer_checkbox'" + check + " onchange=\"SlySuite.setPreference('KOTimer',this.checked)\"><label for='KOtimer_checkbox'>Knockout Timer</label><br />";
             this.getPreference('Achievements') == true ? check = " checked='checked'" : check = "";
             content += "<input type='checkbox' id='Achievements_checkbox'" + check + " onchange=\"SlySuite.setPreference('Achievements',this.checked)\"><label for='Achievements_checkbox'>Achievement tracker</label><br />";
             this.getPreference('CraftingWindow') == true ? check = " checked='checked'" : check = "";
             content += "<input type='checkbox' id='CraftingWindow_checkbox'" + check + " onchange=\"SlySuite.setPreference('CraftingWindow',this.checked)\"><label for='CraftingWindow_checkbox'>Improved crafting window</label><br />";
+            this.getPreference('ExpBar') == true ? check = " checked='checked'" : check = "";
+            content += "<input type='checkbox' id='ExpBar_checkbox'" + check + " onchange=\"SlySuite.setPreference('ExpBar',this.checked)\"><label for='ExpBar_checkbox'>Improved experience bar</label><br />";
             content += "<br /><br />";
             content += "Some settings might require a refresh to apply";
             content += "</div>";
@@ -409,11 +415,13 @@ runScript(function() {
                 this.removeFromTracker(achi);
                 localStorage.setObject('SlySuite_Achievements', SlySuite.Achievements.achievementsList);
             } else {
+                SlySuite.Achievements.openWindow();
                 this.achievementsList[achi] = new Object();
                 this.getAchievementData(achi);
                 SlySuite.Achievements.descriptionNeeded.push(parseInt(achi));
                 if (!SlySuite.Achievements.nextFolderCheck)
                     SlySuite.Achievements.getFolderInfo(SlySuite.Achievements.allFolders.slice());
+
             }
         },
         manualUpdate: function() {
@@ -472,9 +480,14 @@ runScript(function() {
         },
         removeFromTracker: function(achi) {
             $('#ui_achievementtracker #achievementtracker_' + achi).remove();
+            if (Object.keys(SlySuite.Achievements.achievementsList).length == 0)
+                SlySuite.Achievements.minimize();
         },
         updateAchievements: function() {
             SlySuite.Achievements.descriptionNeeded = [];
+
+            if (Object.keys(SlySuite.Achievements.achievementsList).length == 0)
+                SlySuite.Achievements.minimize();
 
             for (var a in SlySuite.Achievements.achievementsList) {
                 SlySuite.Achievements.getAchievementData(a);
@@ -751,6 +764,34 @@ runScript(function() {
         }
 
 
+
+    };
+
+    SlySuite.ExpBar = {
+
+        init: function() {
+            $("#ui_experience_bar .label").off('hover');
+            $("#ui_experience_bar .label span").show();
+            EventHandler.listen("character_exp_changed", SlySuite.ExpBar.update);
+            EventHandler.listen("character_tracking_achievement_changed", SlySuite.ExpBar.update);
+            SlySuite.ExpBar.update();
+
+            var css = 'div#ui_experience_bar .label {text-shadow: 3px 1px 1px #000, 3px -1px 1px #000, -2px 1px 1px #000, -2px 0px 0px #000;}';
+            $('body').append('<style>' + css + '</style>');
+        },
+        update: function() {
+            var epEl = $("#ui_experience_bar"),
+                prog = (undefined === Character.getTrackingAchievement()) ? WestUi.updateTrackXp(epEl) : WestUi.updateTrackAchievement(epEl);
+            $("#ui_experience_bar .label").off('hover');
+            $("#ui_experience_bar .label span").show();
+            xpString = '';
+            if (Character.level < 150) {
+                xpString = prog.percent + '% - ' + (prog.current > 10000 ? Math.round(prog.current / 1000) + 'k' : prog.current) + " / " + (prog.required > 10000 ? Math.round(prog.required / 1000) + 'k' : prog.required);
+                xpString += " (" + ((prog.required - prog.current) > 10000 ? Math.round((prog.required - prog.current) / 1000) + 'k' : (prog.required - prog.current)) + ")";
+            } else
+                xpString = Character.experience.toLocaleString();
+            $("#ui_experience_bar .label span").html(xpString);
+        }
 
     };
 
