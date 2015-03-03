@@ -3,7 +3,7 @@
 // @include         http*://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
-// @version         1.6
+// @version         1.7
 // @description     A collection of enhancements for the browsergame The West
 // @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
@@ -30,7 +30,7 @@ runScript(function() {
             Experience: false,
             Achievements: false,
             CraftingWindow: false,
-            ExpBar: false
+            ExpBar: true
         },
         possibleRiverColours: {
             default: 'Default',
@@ -53,9 +53,9 @@ runScript(function() {
 
         },
         images: {
-            achievements: 'http://i300.photobucket.com/albums/nn22/qwexrty/achievs_zps4c5d9ee3.jpg',
-            settings: 'http://i300.photobucket.com/albums/nn22/qwexrty/settings_zpsa8c2f112.jpg',
-            achievement_icon: 'http://i300.photobucket.com/albums/nn22/qwexrty/questbook2_zpsf9bfe431.png'
+            achievements: '//i300.photobucket.com/albums/nn22/qwexrty/achievs_zps4c5d9ee3.jpg',
+            settings: '//i300.photobucket.com/albums/nn22/qwexrty/settings_zpsa8c2f112.jpg',
+            achievement_icon: '//i300.photobucket.com/albums/nn22/qwexrty/questbook2_zpsf9bfe431.png'
         },
         init: function() {
             Storage.prototype.setObject = function(key, value) {
@@ -158,8 +158,8 @@ runScript(function() {
         protectedUntil: 0,
         timers: "<div style='position:relative;display:block;width:59px;height:59px;cursor:pointer;' class='brown' id='knockouttimer'><div id='timer'></div></div>",
         lastDied: Character.lastDied,
-        image_brown: "http://i300.photobucket.com/albums/nn22/qwexrty/knockout_sprite_zpsa87b8b68.png",
-        image_green: "http://i300.photobucket.com/albums/nn22/qwexrty/knockout_sprite_green_zpsb8aa3008.png"
+        image_brown: "//i300.photobucket.com/albums/nn22/qwexrty/knockout_sprite_zpsa87b8b68.png",
+        image_green: "//i300.photobucket.com/albums/nn22/qwexrty/knockout_sprite_green_zpsb8aa3008.png"
     };
 
     SlySuite.KOTimer.firstrun = function() {
