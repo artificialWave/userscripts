@@ -1,5 +1,8 @@
 <h3>Script Suite changelog</h3>
 
+<h4>1.7 (3 March 2015)</h4>
+<p>- Load images over https if necessary to avoid http/https clashes</p>
+
 <h4>1.6 (14 February 2015)</h4>
 <p>- Added experience bar enhancement</p>
 
