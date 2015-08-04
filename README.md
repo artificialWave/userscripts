@@ -1,5 +1,9 @@
 <h3>Script Suite changelog</h3>
 
+<h4>1.8 (4 August 2015)</h4>
+<p>- Craft multiple items at once <br />
+- Small fix for the experience bar</p>
+
 <h4>1.7 (3 March 2015)</h4>
 <p>- Load images over https if necessary to avoid http/https clashes</p>
 
