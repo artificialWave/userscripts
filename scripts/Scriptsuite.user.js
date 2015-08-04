@@ -772,25 +772,26 @@ runScript(function() {
         init: function() {
             $("#ui_experience_bar .label").off('hover');
             $("#ui_experience_bar .label span").show();
+            $("#ui_experience_bar .label").toggleClass('label xp_label');
             EventHandler.listen("character_exp_changed", SlySuite.ExpBar.update);
             EventHandler.listen("character_tracking_achievement_changed", SlySuite.ExpBar.update);
             SlySuite.ExpBar.update();
 
-            var css = 'div#ui_experience_bar .label {text-shadow: 3px 1px 1px #000, 3px -1px 1px #000, -2px 1px 1px #000, -2px 0px 0px #000;}';
+            var css = 'div#ui_experience_bar .xp_label {color: white !important;position: absolute;top: 0;left: 0;right: 0;bottom: 0;text-align: center;font-size: 11px;font-weight: bold;text-shadow: 3px 1px 1px #000, 3px -1px 1px #000, -2px 1px 1px #000, -2px 0px 0px #000;}';
             $('body').append('<style>' + css + '</style>');
         },
         update: function() {
             var epEl = $("#ui_experience_bar"),
                 prog = (undefined === Character.getTrackingAchievement()) ? WestUi.updateTrackXp(epEl) : WestUi.updateTrackAchievement(epEl);
-            $("#ui_experience_bar .label").off('hover');
-            $("#ui_experience_bar .label span").show();
+            $("#ui_experience_bar .xp_label").off('hover');
+            $("#ui_experience_bar .xp_label span").show();
             xpString = '';
             if (Character.level < 150) {
                 xpString = prog.percent + '% - ' + (prog.current > 10000 ? Math.round(prog.current / 1000) + 'k' : prog.current) + " / " + (prog.required > 10000 ? Math.round(prog.required / 1000) + 'k' : prog.required);
                 xpString += " (" + ((prog.required - prog.current) > 10000 ? Math.round((prog.required - prog.current) / 1000) + 'k' : (prog.required - prog.current)) + ")";
             } else
                 xpString = Character.experience.toLocaleString();
-            $("#ui_experience_bar .label span").html(xpString);
+            $("#ui_experience_bar .xp_label span").html(xpString);
         }
 
     };
