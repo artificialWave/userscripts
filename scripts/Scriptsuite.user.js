@@ -3,7 +3,7 @@
 // @include         http*://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
-// @version         1.7
+// @version         1.8
 // @description     A collection of enhancements for the browsergame The West
 // @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
@@ -580,10 +580,12 @@ runScript(function() {
             $('#recipe_content_' + id).show();
             SlySuite.CraftingWindow.currentlySelected = id;
             if (SlySuite.CraftingWindow.craftCount(id) > 0) {
-                $('#crafting_requirements_display .tw2gui_button').show();
+                $('#crafting_requirements_display #craftbuttons').show();
             } else {
-                $('#crafting_requirements_display .tw2gui_button').hide();
+                $('#crafting_requirements_display #craftbuttons').hide();
             }
+            $('#crafting_requirements_display #craftbuttons #craft_amount').val(1);
+            $('#crafting_requirements_display #craftbuttons #craft_amount').change();
 
         },
         craftCount: function(id) {
@@ -636,25 +638,59 @@ runScript(function() {
             }
 
             if (SlySuite.CraftingWindow.craftCount(SlySuite.CraftingWindow.currentlySelected) > 0) {
-                $('#crafting_requirements_display .tw2gui_button').show();
+                $('#crafting_requirements_display #craftbuttons').show();
             } else {
-                $('#crafting_requirements_display .tw2gui_button').hide();
+                $('#crafting_requirements_display #craftbuttons').hide();
             }
         },
         updateCount: function(id) {
             $('#recipe_count_' + id).html('[' + SlySuite.CraftingWindow.craftCount(id) + ']');
             console.log(id);
+            $('#crafting_requirements_display #craftbuttons #craft_amount').change();
+        },
+        updateCraftAmount(action) {
+            console.log(action);
+            $('#crafting_requirements_display #craftbuttons #minbutton').css('opacity', '1');
+            $('#crafting_requirements_display #craftbuttons #plusbutton').css('opacity', '1');
+            if (action == "plus") {
+                $('#crafting_requirements_display #craftbuttons #craft_amount').val(parseInt($('#crafting_requirements_display #craftbuttons #craft_amount').val()) + 1);
+                $('#crafting_requirements_display #craftbuttons #craft_amount').change();
+            } else if (action == "min") {
+                $('#crafting_requirements_display #craftbuttons #craft_amount').val(parseInt($('#crafting_requirements_display #craftbuttons #craft_amount').val()) - 1);
+                $('#crafting_requirements_display #craftbuttons #craft_amount').change();
+            } else if (action == "textbox") {
+                if ($('#crafting_requirements_display #craftbuttons #craft_amount').val() >= SlySuite.CraftingWindow.craftCount(SlySuite.CraftingWindow.currentlySelected)) {
+                    $('#crafting_requirements_display #craftbuttons #plusbutton').css('opacity', '0.3');
+                    $('#crafting_requirements_display #craftbuttons #craft_amount').val(SlySuite.CraftingWindow.craftCount(SlySuite.CraftingWindow.currentlySelected));
+                }
+                if ($('#crafting_requirements_display #craftbuttons #craft_amount').val() <= 1) {
+                    $('#crafting_requirements_display #craftbuttons #minbutton').css('opacity', '0.3');
+                    $('#crafting_requirements_display #craftbuttons #craft_amount').val(1);
+                }
+            }
         },
         addRecipe: function(recipe) {
             if ($('#crafting_requirements_display').length < 1) {
-                $('.character-crafting.crafting').append($("<div id='crafting_requirements_display' />"));
-                $('#crafting_requirements_display').append(new west.gui.Button(_("Craft"), function() {
+                $('.character-crafting.crafting').append($("<div id='crafting_requirements_display' ><div id='craftbuttons' /></div>"));
+                $('#crafting_requirements_display #craftbuttons').append(new west.gui.Button(_("Craft"), function() {
                     SlySuite.CraftingWindow.craftItem(SlySuite.CraftingWindow.currentlySelected);
                 }).setMinWidth(150).getMainDiv());
+                var textbox = new west.gui.Textfield('craft_amount').setSize(4).setValue(1).getMainDiv();
+                $('#crafting_requirements_display #craftbuttons').append("<span id='minbutton' />", textbox, "<span id='plusbutton' />");
                 /*EventHandler.listen('inventory_changed',function(){
                     
                     
                 });*/
+                $('#crafting_requirements_display #craftbuttons #craft_amount').change(function() {
+                    SlySuite.CraftingWindow.updateCraftAmount('textbox');
+                });
+                $('#crafting_requirements_display #craftbuttons #minbutton').click(function() {
+                    SlySuite.CraftingWindow.updateCraftAmount('min');
+                });
+                $('#crafting_requirements_display #craftbuttons #plusbutton').click(function() {
+                    SlySuite.CraftingWindow.updateCraftAmount('plus');
+                });
+
             }
             var time_last_craft = recipe.last_craft;
             var recipe = ItemManager.get(recipe.item_id);
@@ -719,7 +755,8 @@ runScript(function() {
         },
         craftItem: function(recipe_id) {
             Ajax.remoteCall('crafting', 'start_craft', {
-                recipe_id: recipe_id
+                recipe_id: recipe_id,
+                amount: $('#crafting_requirements_display #craftbuttons #craft_amount').val()
             }, function(resp) {
                 if (resp.error) return new MessageError(resp.msg).show();
                 var data = resp.msg;
@@ -758,7 +795,11 @@ runScript(function() {
             css += '.not_available .recipe_collapse {visibility:hidden;}';
             css += '.recipe_craft {color:rgb(236, 25, 25);}';
             css += '#crafting_requirements_display { position: relative; top: 43px; left: 61px;}';
-            css += '#crafting_requirements_display .tw2gui_button {position:absolute; left:2px; bottom:-19px;}';
+            css += '#crafting_requirements_display #craftbuttons {position:absolute; left:2px; bottom:-19px;}';
+
+            css += '#crafting_requirements_display #craftbuttons #minbutton {cursor:pointer;margin-left:5px;display:inline-block;background-image: url("https://westnls.innogamescdn.com/images/tw2gui/plusminus/minus_button.png");width: 12px;height: 12px;}';
+            css += '#crafting_requirements_display #craftbuttons #plusbutton {cursor:pointer;display:inline-block;background-image: url("https://westnls.innogamescdn.com/images/tw2gui/plusminus/plus_button.png");width: 12px;height: 12px;}';
+            css += '#crafting_requirements_display #craftbuttons > span {vertical-align:middle;}';
 
             $('body').append('<style>' + css + '</style>');
         }
