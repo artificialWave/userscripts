@@ -3,10 +3,10 @@
 // @include         http*://*.the-west.*/game.php*
 // @author          Slygoxx
 // @grant           none
-// @version         1.8
+// @version         1.8.1
 // @description     A collection of enhancements for the browsergame The West
-// @updateURL       https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
-// @installURL      https://github.com/Sepherane/userscripts/raw/master/scripts/Scriptsuite.user.js
+// @updateURL       https://github.com/artificialWave/userscripts/raw/master/scripts/Scriptsuite.user.js
+// @installURL      https://github.com/artificialWave/userscripts/raw/master/scripts/Scriptsuite.user.js
 // @namespace       https://github.com/Sepherane
 // ==/UserScript==
 
@@ -27,9 +27,8 @@ runScript(function() {
         preferences: {
             KOTimer: true,
             RiverColours: "default",
-            Experience: false,
-            Achievements: false,
-            CraftingWindow: false,
+            Achievements: true,
+            CraftingWindow: true,
             ExpBar: true
         },
         possibleRiverColours: {
@@ -101,15 +100,15 @@ runScript(function() {
             }).css({
                 'background-image': 'url(' + this.images.settings + ')',
                 'background-position': '0px 0px'
-            }).mouseleave(function() {
+            }).on('mouseleave', function() {
                 $(this).css("background-position", "0px 0px");
-            }).mouseenter(function(e) {
+            }).on('mouseenter', function(e) {
                 $(this).css("background-position", "-25px 0px");
             }).click(function() {
                 SlySuite.openSettings();
             });
 
-            $('#ui_menubar .ui_menucontainer :last').after($('<div></div>').attr({
+            $('#ui_menubar').append($('<div></div>').attr({
                 'class': 'ui_menucontainer',
                 'id': 'SlySuite_settings_icon'
             }).append(icon).append(bottom));
@@ -364,9 +363,9 @@ runScript(function() {
             }).css({
                 'background-image': 'url(' + SlySuite.images.achievements + ')',
                 'background-position': '0px 0px'
-            }).mouseleave(function() {
+            }).on('mouseleave', function() {
                 $(this).css("background-position", "0px 0px");
-            }).mouseenter(function(e) {
+            }).on('mouseenter', function(e) {
                 $(this).css("background-position", "-25px 0px");
             }).click(function() {
                 SlySuite.Achievements.openWindow();
@@ -585,7 +584,7 @@ runScript(function() {
                 $('#crafting_requirements_display #craftbuttons').hide();
             }
             $('#crafting_requirements_display #craftbuttons #craft_amount').val(1);
-            $('#crafting_requirements_display #craftbuttons #craft_amount').change();
+            $('#crafting_requirements_display #craftbuttons #craft_amount').trigger('change');
 
         },
         craftCount: function(id) {
@@ -628,7 +627,6 @@ runScript(function() {
 
                 if (Crafting.recipes[k].last_craft) {
                     $('#recipe_craft_' + Crafting.recipes[k].item_id).append("<span cursor:default;'>" + Crafting.recipes[k].last_craft.formatDurationBuffWay() + "</span>");
-                    console.log('test');
                 }
 
                 if (mats_available)
@@ -645,19 +643,17 @@ runScript(function() {
         },
         updateCount: function(id) {
             $('#recipe_count_' + id).html('[' + SlySuite.CraftingWindow.craftCount(id) + ']');
-            console.log(id);
-            $('#crafting_requirements_display #craftbuttons #craft_amount').change();
+            $('#crafting_requirements_display #craftbuttons #craft_amount').trigger('change');
         },
         updateCraftAmount(action) {
-            console.log(action);
             $('#crafting_requirements_display #craftbuttons #minbutton').css('opacity', '1');
             $('#crafting_requirements_display #craftbuttons #plusbutton').css('opacity', '1');
             if (action == "plus") {
                 $('#crafting_requirements_display #craftbuttons #craft_amount').val(parseInt($('#crafting_requirements_display #craftbuttons #craft_amount').val()) + 1);
-                $('#crafting_requirements_display #craftbuttons #craft_amount').change();
+                $('#crafting_requirements_display #craftbuttons #craft_amount').trigger('change');
             } else if (action == "min") {
                 $('#crafting_requirements_display #craftbuttons #craft_amount').val(parseInt($('#crafting_requirements_display #craftbuttons #craft_amount').val()) - 1);
-                $('#crafting_requirements_display #craftbuttons #craft_amount').change();
+                $('#crafting_requirements_display #craftbuttons #craft_amount').trigger('change');
             } else if (action == "textbox") {
                 if ($('#crafting_requirements_display #craftbuttons #craft_amount').val() >= SlySuite.CraftingWindow.craftCount(SlySuite.CraftingWindow.currentlySelected)) {
                     $('#crafting_requirements_display #craftbuttons #plusbutton').css('opacity', '0.3');
@@ -681,7 +677,7 @@ runScript(function() {
                     
                     
                 });*/
-                $('#crafting_requirements_display #craftbuttons #craft_amount').change(function() {
+                $('#crafting_requirements_display #craftbuttons #craft_amount').on('change', function() {
                     SlySuite.CraftingWindow.updateCraftAmount('textbox');
                 });
                 $('#crafting_requirements_display #craftbuttons #minbutton').click(function() {
@@ -702,7 +698,7 @@ runScript(function() {
                 var recipe_title_div = $("<div id='recipe_title_" + recipe.item_id + "' class='recipe_title'></div>");
                 var recipe_collapse_div = $("<div id='recipe_count_" + recipe.item_id + "' class='recipe_collapse'></div>");
                 var recipe_difficult_div = $("<div id='recipe_difficult_" + recipe.item_id + "' class='recipe_difficult " + Crafting.getRecipeColor(recipe) + "' title='" + Crafting.description.escapeHTML() + "'></div>");
-                var recipe_name_div = $("<div id='recipe_name" + recipe.item_id + "' class='recipe_name'>" + recipe.name + "</div>");
+                var recipe_name_div = $("<div id='recipe_name" + recipe.item_id + "' class='recipe_name shorten'>" + recipe.name + "</div>");
                 var recipe_craft_div = $("<div id='recipe_craft_" + recipe.item_id + "' class='recipe_craft'></div>");
                 var recipe_content_div = $("<div id='recipe_content_" + recipe.item_id + "' class='recipe_content'></div>").hide();
                 var recipe_craftitem_div = $("<div id='recipe_craftitem_" + recipe.item_id + "' class='recipe_craftitem'></div>");
@@ -749,7 +745,7 @@ runScript(function() {
                 }
                 recipe_content_div.append(recipe_craftitem_div, recipe_resources_content_div, $("<br />"));
                 recipe_content_div.appendTo($('#crafting_requirements_display'));
-                $('#crafting_recipe_list .tw2gui_scrollpane_clipper_contentpane').prepend(recipe_div);
+                $('#crafting_recipe_list .tw2gui_scrollpane_clipper_contentpane').addClass('sly_craft').prepend(recipe_div);
                 SlySuite.CraftingWindow.selectRecipe(recipe.item_id);
             }
         },
@@ -775,8 +771,8 @@ runScript(function() {
         addCss: function() {
             var css = '';
             css += '#crafting_recipe_list { height:250px; top:43px;position:relative}';
-            css += '.recipe_title { background:none; cursor:pointer}';
-            css += '.recipe_title_inner { margin-top:2px;}';
+            css += '.sly_craft .recipe_title { background:none; cursor:pointer}';
+            css += '.sly_craft .recipe_title_inner { margin-top:2px; width:450px}';
 
             css += '.easy { background:none; color:rgb(40,40,40);}';
             css += '.easy .recipe_title:hover { background:rgba(55, 55, 55, 0.75); color:white;}';
@@ -790,15 +786,15 @@ runScript(function() {
             css += '.hard .recipe_title:hover { background:rgba(221, 92, 0, 0.75); color:white;}';
             css += '.hard.selected .recipe_title { background:rgba(221, 92, 0, 0.75); color:white;}';
 
-            css += '.recipe_name {color:inherit;margin-top:0px;}';
-            css += '.recipe_collapse {color:inherit;font-size:inherit;}';
+            css += '.sly_craft .recipe_name {color:inherit;margin-top:0px; width:auto}';
+            css += '.sly_craft .recipe_collapse {color:inherit;font-size:inherit;}';
             css += '.not_available .recipe_collapse {visibility:hidden;}';
-            css += '.recipe_craft {color:rgb(236, 25, 25);}';
+            css += '.sly_craft .recipe_craft {color:rgb(236, 25, 25);}';
             css += '#crafting_requirements_display { position: relative; top: 43px; left: 61px;}';
             css += '#crafting_requirements_display #craftbuttons {position:absolute; left:2px; bottom:-19px;}';
 
-            css += '#crafting_requirements_display #craftbuttons #minbutton {cursor:pointer;margin-left:5px;display:inline-block;background-image: url("https://westnls.innogamescdn.com/images/tw2gui/plusminus/minus_button.png");width: 12px;height: 12px;}';
-            css += '#crafting_requirements_display #craftbuttons #plusbutton {cursor:pointer;display:inline-block;background-image: url("https://westnls.innogamescdn.com/images/tw2gui/plusminus/plus_button.png");width: 12px;height: 12px;}';
+            css += '#crafting_requirements_display #craftbuttons #minbutton {cursor:pointer;margin-left:5px;display:inline-block;background-image: url("/images/tw2gui/plusminus/minus_button.png");width: 12px;height: 12px;}';
+            css += '#crafting_requirements_display #craftbuttons #plusbutton {cursor:pointer;display:inline-block;background-image: url("/images/tw2gui/plusminus/plus_button.png");width: 12px;height: 12px;}';
             css += '#crafting_requirements_display #craftbuttons > span {vertical-align:middle;}';
 
             $('body').append('<style>' + css + '</style>');
