@@ -259,11 +259,11 @@ runScript(function() {
     };
 
     SlySuite.RiverColours.init = function() {
-        if (typeof(Map.Helper) == 'undefined')
+        if (typeof(GameMap.Helper) == 'undefined')
             return;
         SlySuite.RiverColours.initialized = true;
-        SlySuite.RiverColours.oldScript = Map.Helper.imgPath.lookForModification.bind({});
-        Map.Helper.imgPath.lookForModification = function(path, d) {
+        SlySuite.RiverColours.oldScript = GameMap.Helper.imgPath.lookForModification.bind({});
+        GameMap.Helper.imgPath.lookForModification = function(path, d) {
             $('#river_hide_css').remove();
             if (/river|deco_egg_05|quests_fluss/.test(path) && SlySuite.getPreference('RiverColours') != 'default' && SlySuite.getPreference('RiverColours') != 'norivers') {
                 if (SlySuite.getPreference('RiverColours') == 'blue')
@@ -281,8 +281,8 @@ runScript(function() {
 
         };
         SlySuite.RiverColours.changeColour = function() {
-            Map.Helper.imgPath.clearCache();
-            Map.refresh(true);
+            GameMap.Helper.imgPath.clearCache();
+            GameMap.refresh(true);
         };
     };
 
@@ -319,7 +319,7 @@ runScript(function() {
             this.createButton();
         },
         createWindow: function() {
-            if (typeof(Map.width) == 'undefined' || Map.width == 0) {
+            if (typeof(GameMap.width) == 'undefined' || GameMap.width == 0) {
                 setTimeout(SlySuite.Achievements.createWindow, 3000);
                 return;
             }
@@ -342,7 +342,7 @@ runScript(function() {
             this.addCss();
 
             $(this.window.getMainDiv()).css({
-                left: Map.width - 425,
+                left: GameMap.width - 425,
                 top: 400
             });
             $('._tab_id_achievementtracker .tw2gui_window_tab_text .questbook').css({
